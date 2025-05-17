@@ -26,7 +26,7 @@ function App() {
   }, [darktheme]);
 
   return (
-    <div className='flex flex-col justify-between min-h-screen'>
+    <div className='flex flex-col justify-between h-dvh'>
       <Navbar darktheme={darktheme} setDarktheme={setDarktheme} searchVal={searchVal} setSearchVal={setSearchVal} />
 
       <Routes>

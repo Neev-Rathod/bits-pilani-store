@@ -178,7 +178,7 @@ const AddItem = () => {
     const [height, setHeight] = useState(getHeight());
 
     function getHeight() {
-      return window.innerWidth >= 1024 ? 'calc(100vh - 56px)' : 'calc(100vh - 120px)';
+      return window.innerWidth >= 1024 ? 'calc(100dvh - 56px)' : 'calc(100dvh - 120px)';
     }
     useEffect(() => {
       const handleResize = () => setHeight(getHeight());
