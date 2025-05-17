@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef,useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -175,9 +175,18 @@ const AddItem = () => {
             }
         }
     };
+    const [height, setHeight] = useState(getHeight());
 
+    function getHeight() {
+      return window.innerWidth >= 1024 ? 'calc(100vh - 56px)' : 'calc(100vh - 120px)';
+    }
+    useEffect(() => {
+      const handleResize = () => setHeight(getHeight());
+      window.addEventListener('resize', handleResize);
+      return () => window.removeEventListener('resize', handleResize);
+    }, []);
     return (
-        <div className="py-8 px-4 sm:px-6 lg:px-8 w-[100vw]  dark:bg-gray-900 overflow-auto" style={{ height: "calc(100vh - 120px)" }}>
+        <div className="py-8 px-4 sm:px-6 lg:px-8 w-[100vw]  dark:bg-gray-900 overflow-auto" style={{ height }}>
             <ToastContainer position="top-right" autoClose={3000} />
 
             <motion.div
@@ -193,7 +202,7 @@ const AddItem = () => {
                         {/* Product Name */}
                         <motion.div variants={fadeIn} className="form-group">
                             <label htmlFor="productName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                Product Name*
+                                Product Name
                             </label>
                             <input
                                 type="text"
@@ -201,7 +210,7 @@ const AddItem = () => {
                                 name="productName"
                                 value={formData.productName}
                                 onChange={handleChange}
-                                className={`block w-full px-3 py-2 border ${formErrors.productName ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white`}
+                                className={`block w-full outline-none px-3 py-2 border ${formErrors.productName ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white`}
                             />
                             {formErrors.productName && (
                                 <p className="mt-1 text-sm text-red-500">{formErrors.productName}</p>
@@ -211,7 +220,7 @@ const AddItem = () => {
                         {/* Description */}
                         <motion.div variants={fadeIn} className="form-group">
                             <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                Description*
+                                Description
                             </label>
                             <textarea
                                 id="description"
@@ -219,7 +228,7 @@ const AddItem = () => {
                                 rows="4"
                                 value={formData.description}
                                 onChange={handleChange}
-                                className={`block w-full px-3 py-2 border ${formErrors.description ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white resize-none`}
+                                className={`block w-full outline-none px-3 py-2 border ${formErrors.description ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white resize-none`}
                             />
                             {formErrors.description && (
                                 <p className="mt-1 text-sm text-red-500">{formErrors.description}</p>
@@ -229,19 +238,19 @@ const AddItem = () => {
                         {/* Price */}
                         <motion.div variants={fadeIn} className="form-group">
                             <label htmlFor="price" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                Price (₹)*
+                                Price (₹)
                             </label>
                             <div className="mt-1 relative rounded-md shadow-sm">
                                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                     <span className="text-gray-500 dark:text-gray-400 sm:text-sm">₹</span>
                                 </div>
                                 <input
-                                    type="text"
+                                    type="number"
                                     id="price"
                                     name="price"
                                     value={formData.price}
                                     onChange={handleChange}
-                                    className={`block w-full pl-7 pr-12 py-2 border ${formErrors.price ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white`}
+                                    className={`block w-full pl-7 outline-none pr-3 py-2 border ${formErrors.price ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white`}
                                     placeholder="0.00"
                                 />
                             </div>
@@ -253,14 +262,14 @@ const AddItem = () => {
                         {/* Category */}
                         <motion.div variants={fadeIn} className="form-group">
                             <label htmlFor="category" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                Category*
+                                Category
                             </label>
                             <select
                                 id="category"
                                 name="category"
                                 value={formData.category}
                                 onChange={handleChange}
-                                className={`block w-full px-3 py-2 border ${formErrors.category ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white`}
+                                className={`block w-full outline-none px-3 py-2 border ${formErrors.category ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white`}
                             >
                                 <option value="">Select a category</option>
                                 {categories.map((category, index) => (
@@ -275,14 +284,14 @@ const AddItem = () => {
                         {/* Hostel */}
                         <motion.div variants={fadeIn} className="form-group">
                             <label htmlFor="hostel" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                Hostel*
+                                Hostel
                             </label>
                             <select
                                 id="hostel"
                                 name="hostel"
                                 value={formData.hostel}
                                 onChange={handleChange}
-                                className={`block w-full px-3 py-2 border ${formErrors.hostel ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white`}
+                                className={`block w-full outline-none px-3 py-2 border ${formErrors.hostel ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white`}
                             >
                                 <option value="">Select your hostel</option>
                                 {hostels.map((hostel, index) => (
@@ -296,16 +305,16 @@ const AddItem = () => {
 
                         {/* Phone Number */}
                         <motion.div variants={fadeIn} className="form-group">
-                            <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                Phone Number*
+                            <label htmlFor="phoneNumber" className="block text-sm font-medium outline-0 text-gray-700 dark:text-gray-300 mb-1">
+                                Phone Number
                             </label>
                             <input
-                                type="tel"
+                                type="number"
                                 id="phoneNumber"
                                 name="phoneNumber"
                                 value={formData.phoneNumber}
                                 onChange={handleChange}
-                                className={`block w-full px-3 py-2 border ${formErrors.phoneNumber ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white`}
+                                className={`block w-full px-3 outline-0 py-2 border ${formErrors.phoneNumber ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white`}
                                 placeholder="10-digit phone number"
                             />
                             {formErrors.phoneNumber && (
@@ -316,7 +325,7 @@ const AddItem = () => {
                         {/* Product Images */}
                         <motion.div variants={fadeIn} className="form-group">
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                Product Images* (Max 5)
+                                Product Images (Max 5)
                             </label>
                             <div
                                 className={`border-2 border-dashed p-4 rounded-lg text-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${formErrors.images ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'}`}

@@ -273,9 +273,19 @@ const Home = ({ searchVal = "" ,selectedCategory,setSelectedCategory}) => {
       }
     }
   };
+  const [height, setHeight] = useState(getHeight());
+
+  function getHeight() {
+    return window.innerWidth >= 1024 ? 'calc(100vh - 56px)' : 'calc(100vh - 120px)';
+  }
+  useEffect(() => {
+    const handleResize = () => setHeight(getHeight());
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   return (
-    <div style={{height:"calc(100vh - 120px)"}} className='overflow-auto'>
+    <div  className='overflow-auto' style={{ height }}>
       <div className="p-4 md:p-6 lg:p-8 bg-gray-50 dark:bg-gray-900">
         {/* Header */}
         <div className="flex justify-between items-center mb-6 md:mb-8">

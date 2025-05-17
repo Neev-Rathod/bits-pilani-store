@@ -8,10 +8,10 @@ import { Route, Routes } from 'react-router-dom'
 import AddItem from './components/AddItem'
 
 function App() {
-  const [darktheme, setDarktheme] = useState('light');
+  const [darktheme, setDarktheme] = useState(localStorage.getItem("color-theme"));
   const [searchVal, setSearchVal] = useState();
 
-    const [selectedCategory, setSelectedCategory] = useState("All Categories");
+  const [selectedCategory, setSelectedCategory] = useState("All Categories");
 
   useEffect(() => {
     const theme = localStorage.getItem("color-theme");
@@ -28,15 +28,17 @@ function App() {
   return (
     <div className='flex flex-col justify-between min-h-screen'>
       <Navbar darktheme={darktheme} setDarktheme={setDarktheme} searchVal={searchVal} setSearchVal={setSearchVal} />
-      
-      <Routes>
-        <Route path="/" element={<Home searchVal={searchVal} selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory}/>} />
-        <Route path="/categories" element={<Categories  selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory}/>} />
-        <Route path="/add" element={<AddItem/>} />
-        
-      </Routes>
 
-      <Footer />
+      <Routes>
+        <Route path="/" element={<Home searchVal={searchVal} selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory} />} />
+        <Route path="/categories" element={<Categories selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory} />} />
+        <Route path="/add" element={<AddItem />} />
+
+      </Routes>
+      <div className='lg:hidden block'>
+
+        <Footer />
+      </div>
     </div>
   )
 }
