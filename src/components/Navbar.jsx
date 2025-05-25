@@ -357,6 +357,7 @@ function Navbar({ darktheme, setDarktheme, searchVal, setSearchVal }) {
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.1 }}
+                      onClick={() => navigate("/mylistings")}
                     >
                       <FaList className="mr-3 text-blue-500 dark:text-blue-400" />
                       <span className="dark:text-white">My Listings</span>

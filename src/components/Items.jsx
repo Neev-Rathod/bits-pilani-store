@@ -12,12 +12,14 @@ import {
 } from "react-icons/fi";
 import { FaWhatsapp } from "react-icons/fa";
 import { ItemsContext } from "../contexts/ItemsContext";
+import { HeightContext } from "../contexts/HeightContext";
 
 function Item() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { items, loading, error } = useContext(ItemsContext);
   const [imageError, setImageError] = useState(false);
+  const { height } = useContext(HeightContext);
 
   // Animation variants
   const containerVariants = {
@@ -205,18 +207,6 @@ function Item() {
       </div>
     </motion.div>
   );
-  const [height, setHeight] = useState(getHeight());
-
-  function getHeight() {
-    return window.innerWidth >= 1024
-      ? "calc(100dvh - 56px)"
-      : "calc(100dvh - 120px)";
-  }
-  useEffect(() => {
-    const handleResize = () => setHeight(getHeight());
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
 
   return (
     <div

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FiUpload,
@@ -10,6 +10,7 @@ import {
 } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { HeightContext } from "../contexts/HeightContext";
 
 const Feedback = () => {
   const [description, setDescription] = useState("");
@@ -18,6 +19,7 @@ const Feedback = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const navigate = useNavigate();
+  const { height } = useContext(HeightContext);
 
   const handleImageUpload = (files) => {
     const fileArray = Array.from(files).slice(0, 5 - images.length);
@@ -105,20 +107,6 @@ const Feedback = () => {
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0 },
   };
-
-  const [height, setHeight] = useState(getHeight());
-
-  function getHeight() {
-    return window.innerWidth >= 1024
-      ? "calc(100dvh - 56px)"
-      : "calc(100dvh - 120px)";
-  }
-
-  useEffect(() => {
-    const handleResize = () => setHeight(getHeight());
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
 
   if (isSubmitted) {
     return (

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useContext, memo } from "react";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -23,8 +23,7 @@ import {
 import { FaGuitar, FaBed } from "react-icons/fa";
 import { BiHome, BiSolidCategory } from "react-icons/bi";
 import { FaSort } from "react-icons/fa";
-import { memo } from "react";
-import { useContext } from "react";
+import { HeightContext } from "../contexts/HeightContext";
 import { ItemsContext } from "../contexts/ItemsContext";
 import { useNavigate } from "react-router-dom";
 const categoryIcons = {
@@ -69,6 +68,7 @@ const Home = ({ searchVal = "", selectedCategory, setSelectedCategory }) => {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [pageInputValue, setPageInputValue] = useState("");
   const mainContainerRef = useRef(null);
+  const { height } = useContext(HeightContext);
   const { items, loading, error, categoryCount } = useContext(ItemsContext);
   const navigate = useNavigate();
 
@@ -180,20 +180,6 @@ const Home = ({ searchVal = "", selectedCategory, setSelectedCategory }) => {
       },
     },
   };
-
-  const [height, setHeight] = useState(getHeight());
-
-  function getHeight() {
-    return window.innerWidth >= 1024
-      ? "calc(100dvh - 56px)"
-      : "calc(100dvh - 120px)";
-  }
-
-  useEffect(() => {
-    const handleResize = () => setHeight(getHeight());
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
 
   const getCategoryCount = (category) => {
     return categoryCount[category] || 0;

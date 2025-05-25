@@ -1,5 +1,6 @@
 import React from "react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
+import { HeightContext } from "../contexts/HeightContext";
 import { motion } from "framer-motion";
 import {
   FaHeart,
@@ -53,19 +54,7 @@ const AboutPage = () => {
       },
     },
   };
-  const [height, setHeight] = useState(getHeight());
-
-  function getHeight() {
-    return window.innerWidth >= 1024
-      ? "calc(100dvh - 56px)"
-      : "calc(100dvh - 120px)";
-  }
-
-  useEffect(() => {
-    const handleResize = () => setHeight(getHeight());
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
+  const { height } = useContext(HeightContext);
 
   return (
     <div
