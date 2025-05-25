@@ -122,16 +122,21 @@ const Feedback = () => {
 
   if (isSubmitted) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center p-6">
+      <div
+        className="dark:bg-gray-900 bg-gray-50 shadow-lg flex items-center justify-center p-6 overflow-auto"
+        style={{ height }}
+      >
         <motion.div
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="bg-gray-800 rounded-2xl p-8 text-center max-w-md w-full"
+          className="dark:bg-gray-800 bg-white shadow-lg rounded-2xl p-8 text-center max-w-md w-full"
         >
           <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
             <FiCheck className="text-white text-2xl" />
           </div>
-          <h2 className="text-2xl font-bold text-white mb-2">Thank You!</h2>
+          <h2 className="text-2xl font-bold dark:text-white mb-2">
+            Thank You!
+          </h2>
           <p className="text-gray-400">
             Your feedback has been submitted successfully.
           </p>
@@ -141,7 +146,10 @@ const Feedback = () => {
   }
 
   return (
-    <div className="bg-gray-900 py-12 px-6 overflow-auto" style={{ height }}>
+    <div
+      className="dark:bg-gray-900 bg-gray-50  py-12 px-6 overflow-auto"
+      style={{ height }}
+    >
       <motion.div
         variants={containerVariants}
         initial="hidden"
@@ -149,7 +157,7 @@ const Feedback = () => {
         className="max-w-2xl mx-auto"
       >
         <motion.div variants={itemVariants} className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">
+          <h1 className="text-4xl font-bold dark:text-white mb-2">
             Share Your Feedback
           </h1>
           <p className="text-gray-400">
@@ -159,12 +167,12 @@ const Feedback = () => {
         <form onSubmit={handleSubmit}>
           <motion.div
             variants={itemVariants}
-            className="bg-gray-800 rounded-2xl p-8 shadow-2xl border border-gray-700"
+            className="dark:bg-gray-800 bg-white rounded-2xl p-8 shadow-2xl "
           >
             <div className="space-y-6">
               {/* Description Textarea */}
               <motion.div variants={itemVariants}>
-                <label className="flex items-center text-lg font-semibold text-white mb-3">
+                <label className="flex items-center text-lg font-semibold dark:text-white mb-3">
                   <FiMessageSquare className="mr-2" />
                   Description
                 </label>
@@ -172,14 +180,14 @@ const Feedback = () => {
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Tell us about your experience, suggestions, or any issues you've encountered..."
-                  className="w-full h-32 px-4 py-3 bg-gray-700 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
+                  className="w-full outline-none h-32 px-4 py-3 dark:bg-gray-700 border border-gray-600 rounded-xl dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
                   required
                 />
               </motion.div>
 
               {/* Image Upload Section */}
               <motion.div variants={itemVariants}>
-                <label className="flex items-center text-lg font-semibold text-white mb-3">
+                <label className="flex items-center text-lg font-semibold dark:text-white mb-3">
                   <FiImage className="mr-2" />
                   Images ({images.length}/5)
                 </label>
@@ -191,10 +199,10 @@ const Feedback = () => {
                   onDragLeave={handleDragLeave}
                   className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-all cursor-pointer ${
                     isDragOver
-                      ? "border-blue-400 bg-blue-500/10"
+                      ? "border-blue-400 dark:bg-blue-500/10"
                       : images.length >= 5
-                      ? "border-gray-600 bg-gray-700/50"
-                      : "border-gray-600 hover:border-gray-500 bg-gray-700/30"
+                      ? "border-gray-600 dark:bg-gray-700/50"
+                      : "border-gray-600 hover:border-gray-500 dark:bg-gray-700/30"
                   }`}
                 >
                   <input
@@ -277,7 +285,7 @@ const Feedback = () => {
                   whileTap={{ scale: 0.98 }}
                   className={`w-full py-4 px-6 rounded-xl font-semibold text-lg flex items-center justify-center transition-all ${
                     !description.trim() || isSubmitting
-                      ? "bg-gray-600 text-gray-400 cursor-not-allowed"
+                      ? "dark:bg-gray-600 bg-gray-200 text-gray-400 cursor-not-allowed"
                       : "bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-xl"
                   }`}
                 >
