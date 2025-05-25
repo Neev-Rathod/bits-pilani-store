@@ -376,6 +376,7 @@ function Navbar({ darktheme, setDarktheme, searchVal, setSearchVal }) {
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.2 }}
+                      onClick={() => navigate("/aboutus")}
                     >
                       <FaInfoCircle className="mr-3 text-purple-500 dark:text-purple-400" />
                       <span className="dark:text-white">About Us</span>

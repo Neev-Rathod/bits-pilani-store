@@ -8,6 +8,7 @@ import Item from "./components/Items";
 import { Route, Routes } from "react-router-dom";
 import AddItem from "./components/AddItem";
 import Feedback from "./components/Feedback";
+import AboutPage from "./components/AboutUs";
 
 function App() {
   const [darktheme, setDarkthemeState] = useState(
@@ -73,6 +74,7 @@ function App() {
         />
         <Route path="/add" element={<AddItem />} />
         <Route path="/feedback" element={<Feedback />} />
+        <Route path="/aboutus" element={<AboutPage />} />
         <Route path="/item/:id" element={<Item />} />
       </Routes>
 
