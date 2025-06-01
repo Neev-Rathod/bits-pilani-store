@@ -6,13 +6,15 @@ import { useNavigate } from "react-router-dom";
 import { FaUpload } from "react-icons/fa";
 import { RxCross1 } from "react-icons/rx";
 import { HeightContext } from "../contexts/HeightContext";
-const AddItem = () => {
+import { ItemsContext } from "../contexts/ItemsContext";
+const AddItem = ({ setSearchVal }) => {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
   const [isTermsOpen, setIsTermsOpen] = useState(false);
   const [previewImages, setPreviewImages] = useState([]);
   const [formErrors, setFormErrors] = useState({});
   const { height } = useContext(HeightContext);
+  const { items } = useContext(ItemsContext);
 
   const [formData, setFormData] = useState({
     productName: "",
@@ -24,6 +26,8 @@ const AddItem = () => {
     images: [],
     termsAgreed: false,
   });
+
+  const [buyers, setbuyers] = useState();
 
   const categories = [
     "Electronics & Gadgets",
@@ -79,6 +83,15 @@ const AddItem = () => {
     }
   };
 
+  useEffect(() => {
+    const result = items.filter(
+      (item) =>
+        item.itemName.toLowerCase().includes(formData.productName) ||
+        item.category.toLowerCase().includes(formData.productName) ||
+        item.sellerName.toLowerCase().includes(formData.productName)
+    );
+    setbuyers(result);
+  }, [formData]);
   const handleImageChange = (e) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
@@ -251,7 +264,21 @@ const AddItem = () => {
                 </p>
               )}
             </motion.div>
-
+            {buyers?.length > 0 && buyers?.length !== items?.length && (
+              <span className="dark:text-gray-500">
+                {buyers.length} Buyers are available checkout{" "}
+                <span
+                  onClick={() => {
+                    navigate("/");
+                    setSearchVal(formData.productName);
+                    console.log(formData.productName);
+                  }}
+                >
+                  {" "}
+                  here.
+                </span>
+              </span>
+            )}
             {/* Description */}
             <motion.div variants={fadeIn} className="form-group">
               <label

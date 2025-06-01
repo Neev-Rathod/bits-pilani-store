@@ -19,7 +19,14 @@ import { IoAdd } from "react-icons/io5";
 import { BiSolidCategory } from "react-icons/bi";
 import { useNavigate } from "react-router-dom";
 
-function Navbar({ darktheme, setDarktheme, searchVal, setSearchVal }) {
+function Navbar({
+  darktheme,
+  setDarktheme,
+  searchVal,
+  setSearchVal,
+  user,
+  onLogout,
+}) {
   const [showDropdown, setShowDropdown] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [showCampuses, setShowCampuses] = useState(false);
@@ -303,7 +310,7 @@ function Navbar({ darktheme, setDarktheme, searchVal, setSearchVal }) {
                   exit={{ rotate: 90, opacity: 0 }}
                   transition={{ duration: 0.15 }}
                 >
-                  <FaSun className="text-yellow-400 text-xl" />
+                  <FaSun className="text-yellow-400 text-xl" size={22} />
                 </motion.div>
               ) : (
                 <motion.div
@@ -313,7 +320,7 @@ function Navbar({ darktheme, setDarktheme, searchVal, setSearchVal }) {
                   exit={{ rotate: -90, opacity: 0 }}
                   transition={{ duration: 0.15 }}
                 >
-                  <FaMoon className="text-gray-700 text-xl" />
+                  <FaMoon className="text-gray-700 text-xl" size={22} />
                 </motion.div>
               )}
             </AnimatePresence>
@@ -323,11 +330,14 @@ function Navbar({ darktheme, setDarktheme, searchVal, setSearchVal }) {
           <div className="relative cursor-pointer" ref={dropdownRef}>
             <motion.button
               onClick={handleProfileClick}
-              className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+              className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
             >
-              <FaUserCircle className="text-gray-800 dark:text-white text-2xl" />
+              <FaUserCircle
+                className="text-gray-800 dark:text-white text-2xl"
+                size={30}
+              />
             </motion.button>
 
             <AnimatePresence>
@@ -387,6 +397,7 @@ function Navbar({ darktheme, setDarktheme, searchVal, setSearchVal }) {
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.25 }}
+                      onClick={onLogout}
                     >
                       <FaSignOutAlt className="mr-3" />
                       <span>Logout</span>

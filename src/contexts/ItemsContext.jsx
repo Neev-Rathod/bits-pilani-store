@@ -31,7 +31,10 @@ export function ItemsProvider({ children }) {
         setLoading(false);
       }
     }
-    fetchItems();
+    const user = localStorage.getItem("user");
+    if (user) {
+      fetchItems();
+    }
   }, []);
 
   return (

@@ -300,12 +300,12 @@ const Home = ({ searchVal = "", selectedCategory, setSelectedCategory }) => {
                 }`}
               >
                 <div className="text-lg ">{categoryIcons[category]}</div>
-                <div className="flex items-center">
+                <div className="flex items-center h-full">
                   <span className="text-xs whitespace-nowrap mr-2">
                     {category}
                   </span>
                   <span
-                    className={`text-xs px-1.5 py-0.5 rounded-full transition-colors ${
+                    className={`text-xs px-1.5  rounded-full transition-colors ${
                       selectedCategory === category
                         ? "bg-blue-700 dark:bg-blue-700"
                         : "bg-gray-200 dark:bg-gray-700"

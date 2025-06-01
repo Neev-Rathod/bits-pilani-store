@@ -5,13 +5,14 @@ import { motion } from "framer-motion";
 import { FiPhone, FiCalendar, FiTag, FiPackage } from "react-icons/fi";
 import { HeightContext } from "../contexts/HeightContext";
 
-const MyListings = () => {
+const MyListings = ({ user }) => {
   const { items, loading, error } = useContext(ItemsContext);
   const { height } = useContext(HeightContext);
   const navigate = useNavigate();
-  // Filter items for the current user (GIRIK ROUTARAY)
   const myItems =
-    items?.filter((item) => item.sellerName === "GIRIK ROUTARAY") || [];
+    items?.filter(
+      (item) => item.sellerName === user.given_name + user.family_name
+    ) || [];
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
