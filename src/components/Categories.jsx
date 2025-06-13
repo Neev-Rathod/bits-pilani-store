@@ -8,9 +8,9 @@ import {
   FiImage,
   FiUsers,
   FiSmartphone,
-  FiMoreVertical,
 } from "react-icons/fi";
 import { FaGuitar, FaBed } from "react-icons/fa";
+import { FaQuestion } from "react-icons/fa6";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { HeightContext } from "../contexts/HeightContext";
@@ -25,7 +25,7 @@ const categoryIcons = {
   "Room Decor": FiImage,
   "Community & Shared Resources": FiUsers,
   "Digital Subscriptions & Accounts": FiSmartphone,
-  Others: FiMoreVertical,
+  Others: FaQuestion,
 };
 
 const Categories = ({ selectedCategory, setSelectedCategory }) => {
@@ -54,7 +54,7 @@ const Categories = ({ selectedCategory, setSelectedCategory }) => {
         Browse Categories
       </h1>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-12 lg:mb-0">
         {categories.map((category, index) => {
           const IconComponent = categoryIcons[category] || FiSmartphone;
           return (

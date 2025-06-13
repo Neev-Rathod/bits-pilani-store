@@ -247,7 +247,7 @@ function Item() {
                       key="image"
                       src={item.itemImage}
                       alt={item.itemName}
-                      className="max-h-full max-w-full object-contain"
+                      className="max-h-[calc(100dvh-28rem)] sm:max-h-[calc(100dvh-12rem)] max-w-full object-contain"
                       onError={() => setImageError(true)}
                       initial={{ opacity: 0, scale: 0.8 }}
                       animate={{ opacity: 1, scale: 1 }}

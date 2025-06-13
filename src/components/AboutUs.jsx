@@ -156,7 +156,7 @@ const AboutPage = () => {
             </h2>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto md:mb-10 lg:mb-0">
             {/* Vishrut's Card */}
             <motion.div
               variants={cardVariants}
@@ -193,7 +193,7 @@ const AboutPage = () => {
             <motion.div
               variants={cardVariants}
               whileHover="hover"
-              className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-2xl border border-gray-200 dark:border-gray-700 text-center"
+              className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-2xl border border-gray-200 dark:border-gray-700 text-center mb-10 md:mb-0"
             >
               <div className="mb-6">
                 <img

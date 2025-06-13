@@ -17,10 +17,10 @@ import {
   FiImage,
   FiUsers,
   FiSmartphone,
-  FiMoreVertical,
   FiFilter,
 } from "react-icons/fi";
-import { FaGuitar, FaBed } from "react-icons/fa";
+import { FaGuitar, FaBed, FaWhatsapp } from "react-icons/fa";
+import { FaQuestion } from "react-icons/fa6";
 import { BiHome, BiSolidCategory } from "react-icons/bi";
 import { FaSort } from "react-icons/fa";
 import { HeightContext } from "../contexts/HeightContext";
@@ -37,7 +37,7 @@ const categoryIcons = {
   "Room Decor": <FiImage />,
   "Community & Shared Resources": <FiUsers />,
   "Digital Subscriptions & Accounts": <FiSmartphone />,
-  Others: <FiMoreVertical />,
+  Others: <FaQuestion />,
 };
 
 const categories = [
@@ -100,6 +100,10 @@ const Home = ({ searchVal = "", selectedCategory, setSelectedCategory }) => {
       result.sort((a, b) => a.itemPrice - b.itemPrice);
     } else if (sortType === "priceDesc") {
       result.sort((a, b) => b.itemPrice - a.itemPrice);
+    } else if (sortType === "sold") {
+      result = result.filter((item) => item.issold);
+    } else if (sortType === "unsold") {
+      result = result.filter((item) => !item.issold);
     }
 
     setFilteredItems(result);
@@ -227,7 +231,7 @@ const Home = ({ searchVal = "", selectedCategory, setSelectedCategory }) => {
               initial={{ opacity: 0, x: -300 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -300 }}
-              className="fixed inset-0 z-50 bg-black bg-opacity-50"
+              className="fixed inset-0 z-60 bg-black bg-opacity-50"
               onClick={() => setIsFilterOpen(false)}
             >
               <motion.div
@@ -243,40 +247,90 @@ const Home = ({ searchVal = "", selectedCategory, setSelectedCategory }) => {
                   </h2>
                   <button
                     onClick={() => setIsFilterOpen(false)}
-                    className="text-gray-500 dark:text-gray-400"
+                    className="text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full p-1 transition"
                   >
                     ✕
                   </button>
                 </div>
 
-                <h3 className="font-medium text-gray-800 dark:text-white mb-2">
-                  Categories
-                </h3>
-                <div className="space-y-1 mb-4">
-                  {categories.map((category) => (
+                {/* Sort Buttons */}
+                <div className="mb-2">
+                  <span className="text-xs text-gray-500 dark:text-gray-400 mb-3 block">
+                    Sort by
+                  </span>
+                  <div className="space-y-3">
                     <button
-                      key={category}
                       onClick={() => {
-                        setSelectedCategory(category);
+                        setSortType("newest");
                         setIsFilterOpen(false);
                       }}
-                      className={`flex justify-between items-center w-full p-2 rounded-lg transition-colors text-left ${
-                        selectedCategory === category
-                          ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 font-medium"
-                          : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                      }`}
+                      className={`w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition
+              ${
+                sortType === "newest"
+                  ? "bg-blue-600 text-white shadow-lg"
+                  : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-blue-900 hover:text-blue-700 dark:hover:text-blue-300"
+              }`}
                     >
-                      <div className="flex items-center gap-2">
-                        <span className="text-blue-500">
-                          {categoryIcons[category]}
-                        </span>
-                        <span className="text-sm">{category}</span>
-                      </div>
-                      <span className="text-xs bg-gray-200 dark:bg-gray-700 px-1.5 py-0.5 rounded-full">
-                        {getCategoryCount(category)}
-                      </span>
+                      Newest
                     </button>
-                  ))}
+
+                    <button
+                      onClick={() => {
+                        setSortType("priceAsc");
+                        setIsFilterOpen(false);
+                      }}
+                      className={`w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition
+              ${
+                sortType === "priceAsc"
+                  ? "bg-blue-600 text-white shadow-lg"
+                  : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-blue-900 hover:text-blue-700 dark:hover:text-blue-300"
+              }`}
+                    >
+                      Price: Low-High
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSortType("priceDesc");
+                        setIsFilterOpen(false);
+                      }}
+                      className={`w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition
+              ${
+                sortType === "priceDesc"
+                  ? "bg-blue-600 text-white shadow-lg"
+                  : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-blue-900 hover:text-blue-700 dark:hover:text-blue-300"
+              }`}
+                    >
+                      Price: High-Low
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSortType("sold");
+                        setIsFilterOpen(false);
+                      }}
+                      className={`w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition
+              ${
+                sortType === "sold"
+                  ? "bg-blue-600 text-white shadow-lg"
+                  : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-blue-900 hover:text-blue-700 dark:hover:text-blue-300"
+              }`}
+                    >
+                      Sold
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSortType("unsold");
+                        setIsFilterOpen(false);
+                      }}
+                      className={`w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition
+              ${
+                sortType === "unsold"
+                  ? "bg-blue-600 text-white shadow-lg"
+                  : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-blue-900 hover:text-blue-700 dark:hover:text-blue-300"
+              }`}
+                    >
+                      Unsold
+                    </button>
+                  </div>
                 </div>
               </motion.div>
             </motion.div>
@@ -321,11 +375,11 @@ const Home = ({ searchVal = "", selectedCategory, setSelectedCategory }) => {
 
         {/* Sort and results info */}
         <div className="flex justify-between items-center mb-3">
-          <div className="text-xs text-gray-600 dark:text-gray-400">
+          <div className="text-xs text-gray-600 dark:text-gray-400 hidden md:block">
             {filteredItems.length} items
           </div>
 
-          <div className="relative">
+          <div className="relative hidden md:block">
             <select
               value={sortType}
               onChange={(e) => setSortType(e.target.value)}
@@ -334,6 +388,8 @@ const Home = ({ searchVal = "", selectedCategory, setSelectedCategory }) => {
               <option value="newest">Newest</option>
               <option value="priceAsc">Price: Low-High</option>
               <option value="priceDesc">Price: High-Low</option>
+              <option value="sold">Sold</option>
+              <option value="unsold">Unsold</option>
             </select>
             <FaSort className="absolute left-2 top-2 text-gray-500 dark:text-gray-400 text-xs" />
           </div>
@@ -366,7 +422,7 @@ const Home = ({ searchVal = "", selectedCategory, setSelectedCategory }) => {
             variants={containerVariants}
             initial="hidden"
             animate="visible"
-            className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3"
+            className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6 "
           >
             {currentItems.map((item) => (
               <motion.div
@@ -374,7 +430,7 @@ const Home = ({ searchVal = "", selectedCategory, setSelectedCategory }) => {
                 variants={itemVariants}
                 whileHover={{ scale: 1.02 }}
                 transition={{ duration: 0.2 }}
-                className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-md border border-gray-200 dark:border-gray-700 flex flex-col"
+                className="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-700 flex flex-col"
                 onClick={() => navigate(`/item/${item.id}`)}
               >
                 <div className="relative aspect-[3/4] overflow-hidden bg-gray-100 dark:bg-gray-700">
@@ -389,9 +445,9 @@ const Home = ({ searchVal = "", selectedCategory, setSelectedCategory }) => {
                         "https://via.placeholder.com/300x400?text=Image+Not+Available";
                     }}
                   />
-                  <div className="absolute top-0 right-0 bg-blue-500 text-white px-2 py-1 text-xs font-medium shadow-md rounded-bl-lg">
+                  {/* <div className="absolute top-0 right-0 bg-blue-500 text-white px-2 py-1 text-xs font-medium shadow-md rounded-bl-lg">
                     ₹{item.itemPrice}
-                  </div>
+                  </div> */}
                 </div>
                 <div className="p-2 flex-grow">
                   <h3 className="text-sm font-medium mb-1 text-gray-800 dark:text-white line-clamp-1">
@@ -399,11 +455,13 @@ const Home = ({ searchVal = "", selectedCategory, setSelectedCategory }) => {
                   </h3>
 
                   <div className="space-y-1">
-                    <div className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
+                    {/* <div className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
                       <FiUser className="text-blue-500 shrink-0" size={12} />
                       <span className="truncate">{item.sellerName}</span>
+                    </div> */}
+                    <div className="flex items-center gap-1 text-lg text-gray-600 dark:text-gray-400 font-bold">
+                      <span className="truncate">₹{item.itemPrice}</span>
                     </div>
-
                     <div className="flex justify-between">
                       <div className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
                         <FiCalendar
@@ -420,20 +478,21 @@ const Home = ({ searchVal = "", selectedCategory, setSelectedCategory }) => {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-1 text-xs">
+                    {/* <div className="flex items-center gap-1 text-xs">
                       <FiTag className="text-blue-500 shrink-0" size={12} />
                       <span className="text-gray-600 dark:text-gray-400 truncate">
                         {item.category}
                       </span>
-                    </div>
+                    </div> */}
                   </div>
                 </div>
                 <div className="p-2 bg-gray-50 dark:bg-gray-700/50 border-t border-gray-200 dark:border-gray-700">
                   <motion.button
                     whileTap={{ scale: 0.95 }}
-                    className="w-full py-2 bg-blue-500 hover:bg-blue-600 text-white rounded text-xs font-medium transition-colors flex items-center justify-center gap-1"
+                    className="w-full py-2 bg-green-500 hover:bg-green-600 text-white rounded text-xs font-medium transition-colors flex items-center justify-center gap-1"
                   >
-                    <FiPhone size={12} /> Contact
+                    <FaWhatsapp size={16}></FaWhatsapp>
+                    Contact
                   </motion.button>
                 </div>
               </motion.div>
@@ -453,7 +512,7 @@ const Home = ({ searchVal = "", selectedCategory, setSelectedCategory }) => {
 
         {/* Enhanced Pagination with page input */}
         {!loading && !error && totalPages > 1 && (
-          <div className="flex justify-center mt-4 mb-3">
+          <div className="flex justify-center mt-4 mb-24 lg:mb-2">
             <nav className="flex items-center space-x-1">
               <button
                 onClick={() => paginate(Math.max(1, currentPage - 1))}

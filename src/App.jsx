@@ -15,13 +15,14 @@ import Feedback from "./components/Feedback";
 import AboutPage from "./components/AboutUs";
 import MyListings from "./components/MyListing";
 import Login from "./components/Login";
+
 export const ProtectedRoute = ({ children, user }) => {
   if (!user) {
     return <Navigate to="/login" replace />;
   }
-
   return children;
 };
+
 function App() {
   const [darktheme, setDarkthemeState] = useState(
     localStorage.getItem("color-theme") || "light"
@@ -144,7 +145,15 @@ function App() {
                   />
                   <Route
                     path="/add"
-                    element={<AddItem setSearchVal={setSearchVal} />}
+                    element={
+                      <AddItem setSearchVal={setSearchVal} user={user} />
+                    }
+                  />
+                  <Route
+                    path="/add/:id"
+                    element={
+                      <AddItem setSearchVal={setSearchVal} user={user} />
+                    }
                   />
                   <Route path="/feedback" element={<Feedback />} />
                   <Route path="/aboutus" element={<AboutPage />} />

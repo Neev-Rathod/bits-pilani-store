@@ -12,7 +12,7 @@ export function HeightProvider({ children }) {
   function getHeight() {
     return window.innerWidth >= 1024
       ? "calc(100dvh - 56px)"
-      : "calc(100dvh - 120px)";
+      : "calc(100dvh - 56px)";
   }
 
   useEffect(() => {

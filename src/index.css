@@ -1,24 +1,52 @@
 @import "tailwindcss";
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* Default: Show styled scrollbar for width >= 768px */
 ::-webkit-scrollbar {
-    width: 4px;
-    height: 4px;
+  width: 5px;
+  height: 5px;
+  background: transparent;
 }
-
-
 ::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 10px;
+  background: #f3f4f6; /* Tailwind gray-100 */
+  border-radius: 8px;
 }
-
-
 ::-webkit-scrollbar-thumb {
-    background: #888;
-    border-radius: 5px;
+  background: #a1a1aa; /* Tailwind zinc-400 */
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #52525b; /* Tailwind zinc-600 */
+}
+.dark ::-webkit-scrollbar-track {
+  background: #18181b; /* Tailwind zinc-900 */
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: #52525b; /* Tailwind zinc-600 */
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #a1a1aa; /* Tailwind zinc-400 */
+}
+::-webkit-scrollbar-button {
+  display: none;
 }
 
-
-::-webkit-scrollbar-thumb:hover {
-    background: #555;
+/* Hide scrollbar for width < 768px */
+@media (max-width: 767px) {
+  /* Chrome, Safari, Opera */
+  ::-webkit-scrollbar {
+    display: none;
+    width: 0 !important;
+    height: 0 !important;
+    background: transparent;
+  }
+  /* Firefox */
+  html {
+    scrollbar-width: none;
+  }
+  /* IE, Edge */
+  html {
+    -ms-overflow-style: none;
+  }
 }
