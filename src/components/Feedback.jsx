@@ -7,6 +7,7 @@ import {
   FiImage,
   FiMessageSquare,
   FiCheck,
+  FiAlertCircle,
 } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -18,6 +19,7 @@ const Feedback = () => {
   const [isDragOver, setIsDragOver] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [error, setError] = useState("");
   const navigate = useNavigate();
   const { height } = useContext(HeightContext);
 
@@ -58,37 +60,65 @@ const Feedback = () => {
     if (!description.trim()) return;
 
     setIsSubmitting(true);
-    setIsSubmitted(false);
+    setError("");
 
     try {
-      const formData = {
-        description,
-        images, // assuming this is an array of file names or base64 strings
-      };
+      // Create FormData for file upload
+      const formData = new FormData();
+      formData.append("description", description.trim());
 
-      // Real-ish POST request to a dummy URL
+      // Append each image file
+      images.forEach((image, index) => {
+        formData.append(`images`, image.file);
+      });
+
       const response = await axios.post(
-        "https://jsonplaceholder.typicode.com/posts ",
-        formData
+        `${import.meta.env.VITE_API_URL}/feedback`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
       );
 
-      console.log("Submission response:", response.data);
-
-      setIsSubmitting(false);
-      setIsSubmitted(true);
-
-      // Redirect after success animation
-      setTimeout(() => {
-        setDescription("");
-        setImages([]);
-        setIsSubmitted(false);
-        navigate("/"); // Navigate to homepage or any route you prefer
-      }, 2000);
+      // Check for success response
+      if (response.data.status === "success") {
+        setIsSubmitting(false);
+        setIsSubmitted(true);
+      } else {
+        throw new Error("Unexpected response format");
+      }
     } catch (error) {
       setIsSubmitting(false);
+
+      // Handle API error responses
+      if (error.response?.data?.error) {
+        setError(error.response.data.error);
+      } else if (
+        error.response?.status >= 400 &&
+        error.response?.status < 500
+      ) {
+        setError(
+          "Client error occurred. Please check your input and try again."
+        );
+      } else if (error.response?.status >= 500) {
+        setError("Server error occurred. Please try again later.");
+      } else if (error.request) {
+        setError("Network error. Please check your connection and try again.");
+      } else {
+        setError("An unexpected error occurred. Please try again.");
+      }
+
       console.error("Submission failed:", error);
-      alert("Failed to submit form. Please try again.");
     }
+  };
+
+  const handleReset = () => {
+    setDescription("");
+    setImages([]);
+    setIsSubmitted(false);
+    setError("");
   };
 
   const containerVariants = {
@@ -125,9 +155,23 @@ const Feedback = () => {
           <h2 className="text-2xl font-bold dark:text-white mb-2">
             Thank You!
           </h2>
-          <p className="text-gray-400">
+          <p className="text-gray-400 mb-6">
             Your feedback has been submitted successfully.
           </p>
+          <div className="flex gap-3">
+            <button
+              onClick={handleReset}
+              className="flex-1 py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+            >
+              Submit Another
+            </button>
+            <button
+              onClick={() => navigate("/")}
+              className="flex-1 py-2 px-4 border border-gray-600 hover:bg-gray-700 text-gray-300 rounded-lg transition-colors"
+            >
+              Go Home
+            </button>
+          </div>
         </motion.div>
       </div>
     );
@@ -135,7 +179,7 @@ const Feedback = () => {
 
   return (
     <div
-      className="dark:bg-gray-900 bg-gray-50  py-12 px-6 overflow-auto"
+      className="dark:bg-gray-900 bg-gray-50 py-12 px-6 overflow-auto"
       style={{ height }}
     >
       <motion.div
@@ -152,12 +196,35 @@ const Feedback = () => {
             Help us improve by sharing your thoughts and experiences
           </p>
         </motion.div>
+
         <form onSubmit={handleSubmit}>
           <motion.div
             variants={itemVariants}
-            className="dark:bg-gray-800 bg-white rounded-2xl p-8 shadow-2xl "
+            className="dark:bg-gray-800 bg-white rounded-2xl p-8 shadow-2xl"
           >
             <div className="space-y-6">
+              {/* Error Message */}
+              <AnimatePresence>
+                {error && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="flex items-center p-4 bg-red-500/10 border border-red-500/20 rounded-xl"
+                  >
+                    <FiAlertCircle className="text-red-500 mr-3 flex-shrink-0" />
+                    <p className="text-red-400 text-sm">{error}</p>
+                    <button
+                      type="button"
+                      onClick={() => setError("")}
+                      className="ml-auto text-red-500 hover:text-red-400"
+                    >
+                      <FiX />
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
               {/* Description Textarea */}
               <motion.div variants={itemVariants}>
                 <label className="flex items-center text-lg font-semibold dark:text-white mb-3">
@@ -168,8 +235,9 @@ const Feedback = () => {
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Tell us about your experience, suggestions, or any issues you've encountered..."
-                  className="w-full outline-none h-32 px-4 py-3 dark:bg-gray-700 border border-gray-600 rounded-xl dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
+                  className="w-full outline-none h-32 px-4 py-3 dark:bg-gray-700 bg-gray-50 border border-gray-600 rounded-xl dark:text-white text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
                   required
+                  disabled={isSubmitting}
                 />
               </motion.div>
 
@@ -185,7 +253,11 @@ const Feedback = () => {
                   onDrop={handleDrop}
                   onDragOver={handleDragOver}
                   onDragLeave={handleDragLeave}
-                  className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-all cursor-pointer ${
+                  className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-all ${
+                    isSubmitting
+                      ? "cursor-not-allowed opacity-50"
+                      : "cursor-pointer"
+                  } ${
                     isDragOver
                       ? "border-blue-400 dark:bg-blue-500/10"
                       : images.length >= 5
@@ -199,7 +271,7 @@ const Feedback = () => {
                     accept="image/*"
                     onChange={(e) => handleImageUpload(e.target.files)}
                     className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                    disabled={images.length >= 5}
+                    disabled={images.length >= 5 || isSubmitting}
                   />
 
                   <motion.div
@@ -208,16 +280,22 @@ const Feedback = () => {
                   >
                     <FiUpload
                       className={`text-4xl mb-3 ${
-                        images.length >= 5 ? "text-gray-500" : "text-gray-400"
+                        images.length >= 5 || isSubmitting
+                          ? "text-gray-500"
+                          : "text-gray-400"
                       }`}
                     />
                     <p
                       className={`text-lg font-medium mb-1 ${
-                        images.length >= 5 ? "text-gray-500" : "text-gray-300"
+                        images.length >= 5 || isSubmitting
+                          ? "text-gray-500"
+                          : "text-gray-300"
                       }`}
                     >
                       {images.length >= 5
                         ? "Maximum images reached"
+                        : isSubmitting
+                        ? "Upload disabled during submission"
                         : "Drop images here or click to upload"}
                     </p>
                     <p className="text-sm text-gray-500">
@@ -253,7 +331,8 @@ const Feedback = () => {
                           <button
                             type="button"
                             onClick={() => removeImage(image.id)}
-                            className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center transition-colors"
+                            disabled={isSubmitting}
+                            className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-full flex items-center justify-center transition-colors"
                           >
                             <FiX className="text-white text-sm" />
                           </button>
@@ -269,8 +348,12 @@ const Feedback = () => {
                 <motion.button
                   type="submit"
                   disabled={!description.trim() || isSubmitting}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
+                  whileHover={{
+                    scale: !description.trim() || isSubmitting ? 1 : 1.02,
+                  }}
+                  whileTap={{
+                    scale: !description.trim() || isSubmitting ? 1 : 0.98,
+                  }}
                   className={`w-full py-4 px-6 rounded-xl font-semibold text-lg flex items-center justify-center transition-all ${
                     !description.trim() || isSubmitting
                       ? "dark:bg-gray-600 bg-gray-200 text-gray-400 cursor-not-allowed"

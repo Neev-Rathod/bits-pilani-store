@@ -26,18 +26,42 @@ function Navbar({
   setSearchVal,
   user,
   onLogout,
+  selectedCampus,
+  setSelectedCampus,
 }) {
   const [showDropdown, setShowDropdown] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [showCampuses, setShowCampuses] = useState(false);
-  const [selectedCampus, setSelectedCampus] = useState("Pilani");
+  // const [selectedCampus, setSelectedCampus] = useState("Pilani");
   const [isScrolled, setIsScrolled] = useState(false);
   const navigate = useNavigate();
   const searchInputRef = useRef(null);
   const dropdownRef = useRef(null);
   const campusDropdownRef = useRef(null);
 
-  const campuses = ["Pilani", "Goa", "Dubai", "Hyderabad", "All Campuses"];
+  const campuses = [
+    {
+      val: "PIL",
+      name: "Pilani",
+    },
+    {
+      val: "GOA",
+      name: "Goa",
+    },
+    {
+      val: "DUB",
+      name: "Dubai",
+    },
+    {
+      val: "HYD",
+      name: "Hyderabad",
+    },
+    {
+      val: "All Campuses",
+      name: "All Campuses",
+    },
+  ];
+
   // Handle scroll effect
   useEffect(() => {
     const handleScroll = () => {
@@ -239,10 +263,10 @@ function Navbar({
                   <ul className="py-1">
                     {campuses.map((campus, index) => (
                       <motion.li
-                        key={campus}
-                        onClick={() => selectCampus(campus)}
+                        key={campus.val}
+                        onClick={() => selectCampus(campus.val)}
                         className={`px-4 py-2 flex items-center justify-between cursor-pointer ${
-                          selectedCampus === campus
+                          selectedCampus === campus.val
                             ? "bg-blue-50 dark:bg-gray-700 text-blue-600 dark:text-blue-300"
                             : "hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-800 dark:text-white"
                         }`}
@@ -251,8 +275,8 @@ function Navbar({
                         transition={{ delay: index * 0.05 }}
                         whileHover={{ x: 5 }}
                       >
-                        <span>{campus}</span>
-                        {selectedCampus === campus && (
+                        <span>{campus.name}</span>
+                        {selectedCampus === campus.val && (
                           <motion.div
                             initial={{ scale: 0 }}
                             animate={{ scale: 1 }}

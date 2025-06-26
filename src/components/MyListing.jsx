@@ -14,6 +14,7 @@ import {
 } from "react-icons/fi";
 import { HeightContext } from "../contexts/HeightContext";
 import axios from "axios";
+import { toast } from "react-toastify";
 
 const VITE_API_URL = import.meta.env.VITE_API_URL;
 
@@ -45,7 +46,10 @@ const MyListings = ({ user }) => {
   const handleMarkSold = async (itemId, newStatus) => {
     setMarkLoading((prev) => ({ ...prev, [itemId]: true }));
     try {
-      await axios.put(`${VITE_API_URL}/item/${itemId}`, { issold: newStatus });
+      await axios.put(`${VITE_API_URL}/updatestats/${itemId}`, {
+        id: itemId,
+        issold: newStatus,
+      });
       if (setItems) {
         setItems((prevItems) =>
           prevItems.map((item) =>
@@ -54,7 +58,7 @@ const MyListings = ({ user }) => {
         );
       }
     } catch (err) {
-      alert(
+      toast.error(
         "Error updating item status: " +
           (err.response?.data?.message || err.message)
       );
@@ -68,7 +72,10 @@ const MyListings = ({ user }) => {
     if (!window.confirm("Are you sure you want to delete this item?")) return;
     setDeleteLoading((prev) => ({ ...prev, [itemId]: true }));
     try {
-      await axios.delete(`${VITE_API_URL}/item/${itemId}`);
+      await axios.delete(`${VITE_API_URL}/updatestats/${itemId}`, {
+        status: "deleted",
+        id: itemId,
+      });
       if (setItems) {
         setItems((prevItems) => prevItems.filter((item) => item.id !== itemId));
       }

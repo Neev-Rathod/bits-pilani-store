@@ -108,7 +108,7 @@ const AddItem = ({ setSearchVal, user }) => {
           return;
         }
         try {
-          const res = await axios.get(`${VITE_API_URL}/item/${id}/images`);
+          const res = await axios.get(`${VITE_API_URL}/${id}/images`);
           setItemData(item, res.data?.images || []);
         } catch {
           setItemData(item);
@@ -183,7 +183,7 @@ const AddItem = ({ setSearchVal, user }) => {
       errors.productName = "Product name is required";
     if (!formData.description.trim())
       errors.description = "Description is required";
-    if (!formData.price.trim()) errors.price = "Price is required";
+    if (!String(formData.price).trim()) errors.price = "Price is required";
     if (isNaN(Number(formData.price)) || Number(formData.price) <= 0)
       errors.price = "Please enter a valid price";
     if (!formData.category) errors.category = "Please select a category";
@@ -219,12 +219,9 @@ const AddItem = ({ setSearchVal, user }) => {
     formDataToSend.append("category", formData.category);
     formDataToSend.append("sellerHostel", formData.hostel);
     formDataToSend.append("contactNumber", formData.phoneNumber);
-    formDataToSend.append("sellerName", user.firstname + user.lastname);
+    formDataToSend.append("sellerName", user.given_name + user.family_name);
     formDataToSend.append("sellerEmail", user.email);
-    formDataToSend.append("campus", user.campus);
-    formDataToSend.append("dateAdded", new Date().toISOString());
-    formDataToSend.append("issold", false);
-
+    formDataToSend.append("campus", user.campus || "GOA");
     formData.images.forEach((img) => {
       if (img instanceof File) {
         formDataToSend.append("images", img);
@@ -240,19 +237,19 @@ const AddItem = ({ setSearchVal, user }) => {
         });
         toast.success("Item updated successfully!");
       } else {
-        const res = await axios.post(`${VITE_API_URL}/item`, formDataToSend, {
+        const res = await axios.post(`${VITE_API_URL}/item/`, formDataToSend, {
           headers: { "Content-Type": "multipart/form-data" },
         });
+        console.log(res);
+
         toast.success("Product listed successfully!");
         if (setItems && res.data) {
           setItems((prev) => [...prev, res.data]);
         }
       }
-      setTimeout(() => {
-        navigate("/mylistings");
-      }, 1200);
+      navigate("/mylistings");
     } catch (err) {
-      toast.error("Error saving item. Please try again.");
+      toast.error("Error saving item. Please try again." || err);
     }
   };
 

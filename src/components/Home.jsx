@@ -1,4 +1,11 @@
-import React, { useState, useEffect, useRef, useContext, memo } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useContext,
+  memo,
+  useMemo,
+} from "react";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -56,7 +63,12 @@ const categories = [
 
 const ITEMS_PER_PAGE = 15;
 
-const Home = ({ searchVal = "", selectedCategory, setSelectedCategory }) => {
+const Home = ({
+  searchVal = "",
+  selectedCategory,
+  setSelectedCategory,
+  selectedCampus,
+}) => {
   // const [items, setItems] = useState([]);
   // const [loading, setLoading] = useState(true);
   // const [error, setError] = useState(null);
@@ -69,7 +81,7 @@ const Home = ({ searchVal = "", selectedCategory, setSelectedCategory }) => {
   const [pageInputValue, setPageInputValue] = useState("");
   const mainContainerRef = useRef(null);
   const { height } = useContext(HeightContext);
-  const { items, loading, error, categoryCount } = useContext(ItemsContext);
+  const { items, loading, error, getCategoryCount } = useContext(ItemsContext);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -86,6 +98,9 @@ const Home = ({ searchVal = "", selectedCategory, setSelectedCategory }) => {
           item.category.toLowerCase().includes(searchTerm) ||
           item.sellerName.toLowerCase().includes(searchTerm)
       );
+    }
+    if (selectedCampus !== "All Campuses") {
+      result = result.filter((item) => item.campus === selectedCampus);
     }
 
     // Filter by category
@@ -109,7 +124,7 @@ const Home = ({ searchVal = "", selectedCategory, setSelectedCategory }) => {
     setFilteredItems(result);
     setCurrentPage(1); // Reset to first page after filtering
     setPageInputValue(""); // Reset the page input value
-  }, [items, searchVal, selectedCategory, sortType, loading]);
+  }, [items, searchVal, selectedCategory, sortType, loading, selectedCampus]);
 
   // Calculate total pages
   const totalPages = Math.ceil(filteredItems.length / ITEMS_PER_PAGE);
@@ -185,19 +200,9 @@ const Home = ({ searchVal = "", selectedCategory, setSelectedCategory }) => {
     },
   };
 
-  const getCategoryCount = (category) => {
-    return categoryCount[category] || 0;
-  };
-
-  // Function to generate optimized image URL with lower quality for thumbnails
-  const getOptimizedImageUrl = (imageUrl) => {
-    // Check if the URL is from a service that supports optimization params
-    if (imageUrl && imageUrl.includes("amazoff.shop")) {
-      // Append quality and size parameters if the image service supports it
-      return `${imageUrl}?quality=60&width=300`;
-    }
-    return imageUrl;
-  };
+  const categoryCount = useMemo(() => {
+    return getCategoryCount(selectedCampus);
+  }, [getCategoryCount, selectedCampus]);
 
   return (
     <div
@@ -359,13 +364,13 @@ const Home = ({ searchVal = "", selectedCategory, setSelectedCategory }) => {
                     {category}
                   </span>
                   <span
-                    className={`text-xs px-1.5  rounded-full transition-colors ${
+                    className={`text-xs pb-[1px] px-1.5 rounded-full transition-colors ${
                       selectedCategory === category
                         ? "bg-blue-700 dark:bg-blue-700"
                         : "bg-gray-200 dark:bg-gray-700"
                     }`}
                   >
-                    {getCategoryCount(category)}
+                    {categoryCount[category] || 0}
                   </span>
                 </div>
               </button>
@@ -435,7 +440,7 @@ const Home = ({ searchVal = "", selectedCategory, setSelectedCategory }) => {
               >
                 <div className="relative aspect-[3/4] overflow-hidden bg-gray-100 dark:bg-gray-700">
                   <img
-                    src={getOptimizedImageUrl(item.itemImage)}
+                    src={item.itemImage}
                     alt={item.itemName}
                     className="w-full h-full object-cover"
                     loading="lazy"

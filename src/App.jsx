@@ -32,7 +32,7 @@ function App() {
     useState("All Categories");
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-
+  const [selectedCampus, setSelectedCampus] = useState("All Campuses");
   const navigate = useNavigate();
 
   // Initialize theme
@@ -121,6 +121,8 @@ function App() {
                   setSearchVal={setSearchValState}
                   user={user}
                   onLogout={handleLogout}
+                  selectedCampus={selectedCampus}
+                  setSelectedCampus={setSelectedCampus}
                 />
 
                 <Routes>
@@ -131,6 +133,7 @@ function App() {
                         searchVal={searchVal}
                         selectedCategory={selectedCategory}
                         setSelectedCategory={setSelectedCategory}
+                        selectedCampus={selectedCampus}
                       />
                     }
                   />
