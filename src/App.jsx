@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { Route, Routes, Navigate, useNavigate } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
+import axios from "axios";
 import "react-toastify/dist/ReactToastify.css";
 import "./App.css";
 
@@ -8,7 +9,6 @@ import "./App.css";
 import Navbar from "./components/Navbar";
 import Home from "./components/Home";
 import Footer from "./components/Footer";
-import Categories from "./components/Categories";
 import Item from "./components/Items";
 import AddItem from "./components/AddItem";
 import Feedback from "./components/Feedback";
@@ -32,7 +32,10 @@ function App() {
     useState("All Categories");
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedCampus, setSelectedCampus] = useState("All Campuses");
+  const [selectedCampus, setSelectedCampus] = useState(
+    JSON.parse(localStorage.getItem("user"))?.campus || "All Campuses"
+  );
+  const [categories, setCategories] = useState([]);
   const navigate = useNavigate();
 
   // Initialize theme
@@ -63,10 +66,69 @@ function App() {
     setIsLoading(false);
   }, []);
 
-  const handleLogin = (userData) => {
-    setUser(userData);
-    localStorage.setItem("user", JSON.stringify(userData));
-    navigate("/"); // Redirect to home after login
+  const getCSRFTokenFromCookies = () => {
+    const name = "csrftoken=";
+    const decodedCookie = decodeURIComponent(document.cookie);
+    const cookies = decodedCookie.split(";");
+
+    for (let i = 0; i < cookies.length; i++) {
+      let c = cookies[i].trim();
+      if (c.indexOf(name) === 0) {
+        return c.substring(name.length, c.length);
+      }
+    }
+    return null;
+  };
+
+  const handleLogin = async (userData) => {
+    try {
+      await axios.get(`${import.meta.env.VITE_API_URL}/authreceiver`, {
+        withCredentials: true, // required to accept cookie from server
+      });
+    } catch (error) {
+      console.error("Error during authentication:", error);
+    }
+
+    const csrfToken = getCSRFTokenFromCookies();
+
+    try {
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_URL}/authreceiver/`,
+        {
+          email: userData.email,
+          name: userData.name,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": csrfToken,
+          },
+          withCredentials: true,
+        }
+      );
+
+      const userDataWithCampus = {
+        ...userData,
+        campus: response.data.campus, // Use campus from response or default
+      };
+
+      setUser(userDataWithCampus);
+      localStorage.setItem("user", JSON.stringify(userDataWithCampus));
+      console.log("Auth receiver response:", response.data);
+    } catch (err) {
+      console.error("Error fetching auth receiver:", err);
+    }
+
+    try {
+      await axios.get(`${import.meta.env.VITE_API_URL}/authreceiver`, {
+        withCredentials: true, // required to accept cookie from server
+      });
+    } catch (error) {
+      console.error("Error during authentication:", error);
+    }
+
+    navigate("/");
+    toast.success(`Welcome ${userData.name}! 🎉`);
   };
 
   const handleLogout = () => {
@@ -78,10 +140,6 @@ function App() {
   // Memoized callbacks
   const setDarktheme = useCallback((theme) => {
     setDarkthemeState(theme);
-  }, []);
-
-  const setSearchVal = useCallback((val) => {
-    setSearchValState(val);
   }, []);
 
   const setSelectedCategory = useCallback((cat) => {
@@ -134,35 +192,37 @@ function App() {
                         selectedCategory={selectedCategory}
                         setSelectedCategory={setSelectedCategory}
                         selectedCampus={selectedCampus}
+                        categories={categories}
+                        setCategories={setCategories}
                       />
                     }
                   />
-                  <Route
-                    path="/categories"
-                    element={
-                      <Categories
-                        selectedCategory={selectedCategory}
-                        setSelectedCategory={setSelectedCategory}
-                      />
-                    }
-                  />
+
                   <Route
                     path="/add"
                     element={
-                      <AddItem setSearchVal={setSearchVal} user={user} />
+                      <AddItem
+                        user={user}
+                        categories={categories}
+                        setCategories={setCategories}
+                      />
                     }
                   />
                   <Route
                     path="/add/:id"
                     element={
-                      <AddItem setSearchVal={setSearchVal} user={user} />
+                      <AddItem
+                        user={user}
+                        categories={categories}
+                        setCategories={setCategories}
+                      />
                     }
                   />
                   <Route path="/feedback" element={<Feedback />} />
                   <Route path="/aboutus" element={<AboutPage />} />
                   <Route
                     path="/mylistings"
-                    element={<MyListings user={user} />}
+                    element={<MyListings user={user} categories={categories} />}
                   />
                   <Route path="/item/:id" element={<Item />} />
                   {/* Catch all route for protected area */}

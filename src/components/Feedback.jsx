@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   FiUpload,
@@ -11,7 +11,6 @@ import {
 } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { HeightContext } from "../contexts/HeightContext";
 
 const Feedback = () => {
   const [description, setDescription] = useState("");
@@ -21,7 +20,6 @@ const Feedback = () => {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
-  const { height } = useContext(HeightContext);
 
   const handleImageUpload = (files) => {
     const fileArray = Array.from(files).slice(0, 5 - images.length);
@@ -54,22 +52,36 @@ const Feedback = () => {
     setImages((prev) => prev.filter((img) => img.id !== id));
   };
 
+  // Helper to extract CSRF token from cookies
+  const getCSRFTokenFromCookies = () => {
+    const name = "csrftoken=";
+    const decoded = decodeURIComponent(document.cookie);
+    const cookies = decoded.split(";");
+    for (let c of cookies) {
+      c = c.trim();
+      if (c.startsWith(name)) return c.substring(name.length);
+    }
+    return null;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     if (!description.trim()) return;
-
     setIsSubmitting(true);
     setError("");
 
     try {
-      // Create FormData for file upload
+      const csrfToken = getCSRFTokenFromCookies();
+      console.log("CSRF Token retrieved:", csrfToken);
+
+      if (!csrfToken) {
+        throw new Error("CSRF token not found in cookies.");
+      }
+
       const formData = new FormData();
       formData.append("description", description.trim());
-
-      // Append each image file
-      images.forEach((image, index) => {
-        formData.append(`images`, image.file);
+      images.forEach((image) => {
+        formData.append("images", image.file);
       });
 
       const response = await axios.post(
@@ -78,11 +90,13 @@ const Feedback = () => {
         {
           headers: {
             "Content-Type": "multipart/form-data",
+            "X-CSRFToken": csrfToken, // Include CSRF token in headers
           },
+          withCredentials: true, // Ensure cookies are sent with the request
         }
       );
 
-      // Check for success response
+      // Success check
       if (response.data.status === "success") {
         setIsSubmitting(false);
         setIsSubmitted(true);
@@ -92,7 +106,11 @@ const Feedback = () => {
     } catch (error) {
       setIsSubmitting(false);
 
-      // Handle API error responses
+      // Enhanced error logging
+      console.error("Full error object:", error);
+      console.error("Error config:", error.config);
+      console.error("Error request headers:", error.config?.headers);
+
       if (error.response?.data?.error) {
         setError(error.response.data.error);
       } else if (
@@ -109,7 +127,6 @@ const Feedback = () => {
       } else {
         setError("An unexpected error occurred. Please try again.");
       }
-
       console.error("Submission failed:", error);
     }
   };
@@ -142,7 +159,7 @@ const Feedback = () => {
     return (
       <div
         className="dark:bg-gray-900 bg-gray-50 shadow-lg flex items-center justify-center p-6 overflow-auto"
-        style={{ height }}
+        style={{ height: "calc(100dvh - 56px)" }}
       >
         <motion.div
           initial={{ scale: 0.8, opacity: 0 }}
@@ -180,7 +197,7 @@ const Feedback = () => {
   return (
     <div
       className="dark:bg-gray-900 bg-gray-50 py-12 px-6 overflow-auto"
-      style={{ height }}
+      style={{ height: "calc(100dvh - 56px)" }}
     >
       <motion.div
         variants={containerVariants}

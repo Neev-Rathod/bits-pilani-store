@@ -9,15 +9,7 @@ const Login = ({ onLogin }) => {
     try {
       const user = jwtDecode(credentialResponse.credential);
       onLogin(user);
-      location.reload();
-      toast.success(`Welcome ${user.name}! 🎉`, {
-        position: "top-right",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-      });
+      // location.reload();
     } catch (error) {
       console.error("Login decoding failed:", error);
       toast.error("Login failed. Please try again.", {
@@ -67,7 +59,7 @@ const Login = ({ onLogin }) => {
           animate="visible"
         >
           <motion.div variants={itemVariants}>
-            <h1 className="text-4xl lg:text-6xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+            <h1 className="text-4xl lg:text-6xl font-bold text-black dark:text-white">
               Welcome Back!
             </h1>
             <p className="text-xl text-gray-600 dark:text-gray-300 mt-4">
@@ -92,7 +84,7 @@ const Login = ({ onLogin }) => {
               initial="initial"
               animate="animate"
             >
-              <div className="w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-20 h-20  rounded-full flex items-center justify-center mx-auto mb-4 bg-gray-100 dark:bg-white">
                 <FcGoogle className="text-4xl" />
               </div>
               <h2 className="text-2xl font-bold text-gray-800 dark:text-white">

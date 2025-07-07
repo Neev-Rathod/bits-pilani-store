@@ -1,21 +1,7 @@
-import React, {
-  useState,
-  useEffect,
-  useRef,
-  useContext,
-  memo,
-  useMemo,
-} from "react";
+import { useState, useEffect, useRef, memo, useMemo, useCallback } from "react";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  FiCalendar,
-  FiPhone,
-  FiTag,
-  FiUser,
-  FiChevronLeft,
-  FiChevronRight,
-} from "react-icons/fi";
+import { FiCalendar, FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import {
   FiMonitor,
   FiCoffee,
@@ -30,9 +16,8 @@ import { FaGuitar, FaBed, FaWhatsapp } from "react-icons/fa";
 import { FaQuestion } from "react-icons/fa6";
 import { BiHome, BiSolidCategory } from "react-icons/bi";
 import { FaSort } from "react-icons/fa";
-import { HeightContext } from "../contexts/HeightContext";
-import { ItemsContext } from "../contexts/ItemsContext";
 import { useNavigate } from "react-router-dom";
+
 const categoryIcons = {
   "All Categories": <BiSolidCategory />,
   "Electronics & Gadgets": <FiMonitor />,
@@ -47,94 +32,151 @@ const categoryIcons = {
   Others: <FaQuestion />,
 };
 
-const categories = [
-  "All Categories",
-  "Electronics & Gadgets",
-  "Kitchen & Cooking",
-  "Books & Study Materials",
-  "Sports & Fitness Gear",
-  "Musical Instruments",
-  "Dorm & Bedroom Essentials",
-  "Room Decor",
-  "Community & Shared Resources",
-  "Digital Subscriptions & Accounts",
-  "Others",
-];
-
-const ITEMS_PER_PAGE = 15;
+const ITEMS_PER_PAGE = 20;
 
 const Home = ({
   searchVal = "",
   selectedCategory,
   setSelectedCategory,
   selectedCampus,
+  categories,
+  setCategories,
 }) => {
-  // const [items, setItems] = useState([]);
-  // const [loading, setLoading] = useState(true);
-  // const [error, setError] = useState(null);
-  const [filteredItems, setFilteredItems] = useState([]);
+  const [items, setItems] = useState([]);
+  const [totalItems, setTotalItems] = useState(0);
+  const [totalItemsCat, setTotalItemsCat] = useState({});
   const [currentPage, setCurrentPage] = useState(1);
   const [sortType, setSortType] = useState("newest");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [categoryScrollRef, setCategoryScrollRef] = useState(null);
-  // const [categoryCount, setCategoryCount] = useState({});
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [pageInputValue, setPageInputValue] = useState("");
+  const [debouncedSearchVal, setDebouncedSearchVal] = useState(searchVal);
   const mainContainerRef = useRef(null);
-  const { height } = useContext(HeightContext);
-  const { items, loading, error, getCategoryCount } = useContext(ItemsContext);
   const navigate = useNavigate();
 
+  // Debounce search value
   useEffect(() => {
-    if (loading) return;
+    const timer = setTimeout(() => {
+      setDebouncedSearchVal(searchVal);
+    }, 400);
 
+    return () => clearTimeout(timer);
+  }, [searchVal]);
+
+  // Convert sort type to API format
+  const getSortValue = (sortType) => {
+    switch (sortType) {
+      case "newest":
+        return 0;
+      case "priceAsc":
+        return 1;
+      case "priceDesc":
+        return 2;
+      default:
+        return 0;
+    }
+  };
+
+  // Fetch items from API
+
+  const fetchItems = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const params = new URLSearchParams();
+
+      // Add parameters
+      if (debouncedSearchVal && debouncedSearchVal.trim() !== "") {
+        params.append("q", debouncedSearchVal.trim());
+      }
+
+      if (selectedCategory && selectedCategory !== "All Categories") {
+        params.append("cat", selectedCategory);
+      }
+
+      if (selectedCampus && selectedCampus !== "All Campuses") {
+        params.append("c", selectedCampus);
+      }
+
+      params.append("p", currentPage.toString());
+      params.append("s", getSortValue(sortType).toString());
+
+      // Make both API calls with axios
+      const response = await axios.get(
+        `${import.meta.env.VITE_API_URL}/items?${params.toString()}`,
+        {
+          withCredentials: true, // Required to send cookies
+        }
+      );
+      const res = await axios.get(
+        `${import.meta.env.VITE_API_URL}/categories`,
+        {
+          withCredentials: true, // Required to send cookies
+        }
+      );
+      setCategories(res.data.data); // Set categories data
+      console.log("Categories fetched:", res);
+      // Set categories data
+      console.log(response);
+
+      // Check response status and set items data
+      if (response.data.status === "ok") {
+        setItems(response.data.items);
+        setTotalItems(response.data.total_items);
+        setTotalItemsCat(response.data.total_items_cat || {});
+      } else {
+        setError("Failed to fetch items");
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || "Failed to fetch items");
+    } finally {
+      setLoading(false);
+    }
+  }, [
+    debouncedSearchVal,
+    selectedCategory,
+    selectedCampus,
+    currentPage,
+    sortType,
+  ]);
+
+  const allCategoriesOption = {
+    id: "All Categories",
+    name: "All Categories",
+  };
+  console.log("Categories:", categories);
+
+  const categoriesWithAll = [allCategoriesOption, ...categories];
+  // Fetch items when dependencies change
+  useEffect(() => {
+    fetchItems();
+  }, [fetchItems]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+    setPageInputValue("");
+  }, [debouncedSearchVal, selectedCategory, selectedCampus, sortType]);
+
+  // Handle sold/unsold filtering (client-side for now)
+  const displayItems = useMemo(() => {
     let result = [...items];
 
-    // Filter by search term
-    if (searchVal && searchVal.trim() !== "") {
-      const searchTerm = searchVal.toLowerCase();
-      result = result.filter(
-        (item) =>
-          item.itemName.toLowerCase().includes(searchTerm) ||
-          item.category.toLowerCase().includes(searchTerm) ||
-          item.sellerName.toLowerCase().includes(searchTerm)
-      );
-    }
-    if (selectedCampus !== "All Campuses") {
-      result = result.filter((item) => item.campus === selectedCampus);
-    }
-
-    // Filter by category
-    if (selectedCategory !== "All Categories") {
-      result = result.filter((item) => item.category === selectedCategory);
-    }
-
-    // Sort items
-    if (sortType === "newest") {
-      result.sort((a, b) => new Date(b.dateAdded) - new Date(a.dateAdded));
-    } else if (sortType === "priceAsc") {
-      result.sort((a, b) => a.itemPrice - b.itemPrice);
-    } else if (sortType === "priceDesc") {
-      result.sort((a, b) => b.itemPrice - a.itemPrice);
-    } else if (sortType === "sold") {
+    if (sortType === "sold") {
       result = result.filter((item) => item.issold);
     } else if (sortType === "unsold") {
       result = result.filter((item) => !item.issold);
     }
 
-    setFilteredItems(result);
-    setCurrentPage(1); // Reset to first page after filtering
-    setPageInputValue(""); // Reset the page input value
-  }, [items, searchVal, selectedCategory, sortType, loading, selectedCampus]);
+    return result;
+  }, [items, sortType]);
 
   // Calculate total pages
-  const totalPages = Math.ceil(filteredItems.length / ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
 
-  // Get current items
-  const indexOfLastItem = currentPage * ITEMS_PER_PAGE;
-  const indexOfFirstItem = indexOfLastItem - ITEMS_PER_PAGE;
-  const currentItems = filteredItems.slice(indexOfFirstItem, indexOfLastItem);
-
-  // Scroll to top when page changes
   useEffect(() => {
     if (mainContainerRef.current) {
       mainContainerRef.current.scrollTo({
@@ -176,7 +218,6 @@ const Home = ({
     });
   };
 
-  // Container variants for staggered animation
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -187,7 +228,6 @@ const Home = ({
     },
   };
 
-  // Item variants for animation
   const itemVariants = {
     hidden: { opacity: 0, y: 10 },
     visible: {
@@ -200,14 +240,30 @@ const Home = ({
     },
   };
 
+  // Get category counts
   const categoryCount = useMemo(() => {
-    return getCategoryCount(selectedCampus);
-  }, [getCategoryCount, selectedCampus]);
+    const counts = {};
+
+    let sumOfAllCategories = 0;
+
+    categoriesWithAll.forEach((category) => {
+      if (category.id !== "All Categories") {
+        const count = totalItemsCat[category.id] || 0;
+        counts[category.id] = count;
+        sumOfAllCategories += count;
+      }
+    });
+
+    // Now assign the sum to "All Categories"
+    counts["All Categories"] = sumOfAllCategories;
+
+    return counts;
+  }, [totalItemsCat, categoriesWithAll]);
 
   return (
     <div
       className="overflow-auto bg-gray-50 dark:bg-gray-900"
-      style={{ height }}
+      style={{ height: "calc(100dvh - 56px)" }}
       ref={mainContainerRef}
     >
       <div className="p-2 sm:p-4 ">
@@ -236,7 +292,7 @@ const Home = ({
               initial={{ opacity: 0, x: -300 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -300 }}
-              className="fixed inset-0 z-60 bg-black bg-opacity-50"
+              className="fixed inset-0 z-60 bg-black/25 "
               onClick={() => setIsFilterOpen(false)}
             >
               <motion.div
@@ -348,29 +404,29 @@ const Home = ({
             className="flex space-x-2 overflow-auto w-full pb-2 "
             ref={setCategoryScrollRef}
           >
-            {categories.map((category) => (
+            {categoriesWithAll.map((category) => (
               <button
-                key={category}
-                onClick={() => setSelectedCategory(category)}
+                key={category.id}
+                onClick={() => setSelectedCategory(category.id)}
                 className={`flex gap-2 items-center justify-center p-2 rounded-lg transition-colors ${
-                  selectedCategory === category
+                  selectedCategory === category.id
                     ? "bg-blue-500 text-white"
                     : "bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700 hover:dark:bg-gray-700 hover:bg-gray-100"
                 }`}
               >
-                <div className="text-lg ">{categoryIcons[category]}</div>
+                <div className="text-lg ">{categoryIcons[category.name]}</div>
                 <div className="flex items-center h-full">
                   <span className="text-xs whitespace-nowrap mr-2">
-                    {category}
+                    {category.name}
                   </span>
                   <span
                     className={`text-xs pb-[1px] px-1.5 rounded-full transition-colors ${
-                      selectedCategory === category
+                      selectedCategory === category.id
                         ? "bg-blue-700 dark:bg-blue-700"
                         : "bg-gray-200 dark:bg-gray-700"
                     }`}
                   >
-                    {categoryCount[category] || 0}
+                    {categoryCount[category.id] || 0}
                   </span>
                 </div>
               </button>
@@ -381,7 +437,7 @@ const Home = ({
         {/* Sort and results info */}
         <div className="flex justify-between items-center mb-3">
           <div className="text-xs text-gray-600 dark:text-gray-400 hidden md:block">
-            {filteredItems.length} items
+            {loading ? "Loading..." : `${displayItems.length} items`}
           </div>
 
           <div className="relative hidden md:block">
@@ -413,7 +469,7 @@ const Home = ({
             <div className="text-5xl mb-2">⚠️</div>
             <p className="text-lg text-red-600 dark:text-red-400">{error}</p>
             <button
-              onClick={() => window.location.reload()}
+              onClick={() => fetchItems()}
               className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
             >
               Retry
@@ -422,14 +478,14 @@ const Home = ({
         )}
 
         {/* Items grid - more compact layout with lazy loading images */}
-        {!loading && !error && currentItems.length > 0 ? (
+        {!loading && !error && displayItems.length > 0 ? (
           <motion.div
             variants={containerVariants}
             initial="hidden"
             animate="visible"
             className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6 "
           >
-            {currentItems.map((item) => (
+            {displayItems.map((item) => (
               <motion.div
                 key={item.id}
                 variants={itemVariants}
@@ -440,32 +496,20 @@ const Home = ({
               >
                 <div className="relative aspect-[3/4] overflow-hidden bg-gray-100 dark:bg-gray-700">
                   <img
-                    src={item.itemImage}
-                    alt={item.itemName}
+                    src={item.firstimage}
+                    alt={item.title}
                     className="w-full h-full object-cover"
                     loading="lazy"
-                    onError={(e) => {
-                      e.target.onerror = null;
-                      e.target.src =
-                        "https://via.placeholder.com/300x400?text=Image+Not+Available";
-                    }}
                   />
-                  {/* <div className="absolute top-0 right-0 bg-blue-500 text-white px-2 py-1 text-xs font-medium shadow-md rounded-bl-lg">
-                    ₹{item.itemPrice}
-                  </div> */}
                 </div>
                 <div className="p-2 flex-grow">
                   <h3 className="text-sm font-medium mb-1 text-gray-800 dark:text-white line-clamp-1">
-                    {item.itemName}
+                    {item.title}
                   </h3>
 
                   <div className="space-y-1">
-                    {/* <div className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
-                      <FiUser className="text-blue-500 shrink-0" size={12} />
-                      <span className="truncate">{item.sellerName}</span>
-                    </div> */}
                     <div className="flex items-center gap-1 text-lg text-gray-600 dark:text-gray-400 font-bold">
-                      <span className="truncate">₹{item.itemPrice}</span>
+                      <span className="truncate">₹{item.price}</span>
                     </div>
                     <div className="flex justify-between">
                       <div className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
@@ -473,22 +517,15 @@ const Home = ({
                           className="text-blue-500 shrink-0"
                           size={12}
                         />
-                        <span>{formatDate(item.dateAdded)}</span>
+                        <span>{formatDate(item.date)}</span>
                       </div>
                     </div>
                     <div className="flex justify-between">
                       <div className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
                         <BiHome className="text-blue-500 shrink-0" size={12} />
-                        <span>{item.sellerHostel}</span>
+                        <span>{item.hostel}</span>
                       </div>
                     </div>
-
-                    {/* <div className="flex items-center gap-1 text-xs">
-                      <FiTag className="text-blue-500 shrink-0" size={12} />
-                      <span className="text-gray-600 dark:text-gray-400 truncate">
-                        {item.category}
-                      </span>
-                    </div> */}
                   </div>
                 </div>
                 <div className="p-2 bg-gray-50 dark:bg-gray-700/50 border-t border-gray-200 dark:border-gray-700">
@@ -503,7 +540,7 @@ const Home = ({
               </motion.div>
             ))}
           </motion.div>
-        ) : !loading && !error && currentItems.length === 0 ? (
+        ) : !loading && !error && displayItems.length === 0 ? (
           <div className="text-center py-8 bg-white dark:bg-gray-800 rounded-lg shadow-md">
             <div className="text-5xl mb-2">🔍</div>
             <p className="text-lg text-gray-600 dark:text-gray-400">

@@ -1,6 +1,3 @@
-import React from "react";
-import { useState, useEffect, useContext } from "react";
-import { HeightContext } from "../contexts/HeightContext";
 import { motion } from "framer-motion";
 import {
   FaHeart,
@@ -54,12 +51,11 @@ const AboutPage = () => {
       },
     },
   };
-  const { height } = useContext(HeightContext);
 
   return (
     <div
       className="overflow-auto bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white"
-      style={{ height }}
+      style={{ height: "calc(100dvh - 56px)" }}
     >
       <motion.div
         variants={containerVariants}
@@ -70,12 +66,12 @@ const AboutPage = () => {
         {/* Header Section */}
         <motion.div variants={itemVariants} className="text-center mb-16">
           <div className="flex items-center justify-center mb-6">
-            <h1 className="text-5xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
+            <h1 className="md:text-5xl text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
               BITS Pawnshop
             </h1>
           </div>
           <motion.div
-            className="flex items-center justify-center text-xl text-gray-600 dark:text-gray-300 mb-4"
+            className="flex items-center justify-center text-sm md:text-xl text-gray-600 dark:text-gray-300 mb-4"
             whileHover={{ scale: 1.1 }}
             transition={{ duration: 0.3 }}
           >
@@ -156,7 +152,7 @@ const AboutPage = () => {
             </h2>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto md:mb-10 lg:mb-0">
+          <div className="grid lg:grid-cols-3  md:grid-cols-2 gap-8 mb-10 lg:mb-0">
             {/* Vishrut's Card */}
             <motion.div
               variants={cardVariants}
@@ -165,7 +161,7 @@ const AboutPage = () => {
             >
               <div className="mb-6">
                 <img
-                  src="https://bits-pilani.store/static/images/vishrut.png"
+                  src="/vishrut.png"
                   alt="Vishrut Ramraj"
                   className="w-32 h-32 rounded-full mx-auto border-4 border-blue-500 shadow-lg"
                 />
@@ -176,7 +172,7 @@ const AboutPage = () => {
               <div className="flex items-center justify-center mb-4">
                 <FaCode className="text-blue-600 dark:text-blue-400 mr-2" />
                 <p className="text-blue-600 dark:text-blue-400 font-medium">
-                  Developer of the website
+                  Backend Developer
                 </p>
               </div>
               <motion.a
@@ -197,7 +193,7 @@ const AboutPage = () => {
             >
               <div className="mb-6">
                 <img
-                  src="https://bits-pilani.store/static/images/ayush.png"
+                  src="/ayush.png"
                   alt="Ayush Sanger"
                   className="w-32 h-32 rounded-full mx-auto border-4 border-blue-500 shadow-lg"
                 />
@@ -218,6 +214,37 @@ const AboutPage = () => {
               >
                 <FaEnvelope className="mr-2" />
                 f20230742@goa.bits-pilani.ac.in
+              </motion.a>
+            </motion.div>
+            {/* Neev Card */}
+            <motion.div
+              variants={cardVariants}
+              whileHover="hover"
+              className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-2xl border border-gray-200 dark:border-gray-700 text-center"
+            >
+              <div className="mb-6">
+                <img
+                  src="/neev.jpeg"
+                  alt="Neev Rathod"
+                  className="w-32 h-32 object-cover rounded-full mx-auto border-4 border-blue-500 shadow-lg"
+                />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                Neev Rathod
+              </h3>
+              <div className="flex items-center justify-center mb-4">
+                <FaCode className="text-blue-600 dark:text-blue-400 mr-2" />
+                <p className="text-blue-600 dark:text-blue-400 font-medium">
+                  Frontend Developer
+                </p>
+              </div>
+              <motion.a
+                href="mailto:f20240487@goa.bits-pilani.ac.in"
+                className="inline-flex items-center text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors duration-300"
+                whileHover={{ scale: 1.05 }}
+              >
+                <FaEnvelope className="mr-2" />
+                f20240487@goa.bits-pilani.ac.in
               </motion.a>
             </motion.div>
           </div>

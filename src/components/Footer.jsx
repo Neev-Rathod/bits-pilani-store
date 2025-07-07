@@ -1,6 +1,6 @@
-import React from "react";
 import { IoAdd } from "react-icons/io5";
-import { BiHome, BiSolidCategory } from "react-icons/bi";
+import { FaList } from "react-icons/fa";
+import { BiHome } from "react-icons/bi";
 import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -17,9 +17,9 @@ const navItems = [
     isCenter: true,
   },
   {
-    label: "Categories",
-    icon: BiSolidCategory,
-    path: "/categories",
+    label: "My Listing",
+    icon: FaList,
+    path: "/mylistings",
   },
 ];
 

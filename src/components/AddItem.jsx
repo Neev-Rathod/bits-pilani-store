@@ -1,52 +1,12 @@
-import React, { useState, useRef, useEffect, useContext } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { toast } from "react-toastify";
 import { useNavigate, useParams } from "react-router-dom";
 import { FaUpload } from "react-icons/fa";
 import { RxCross1 } from "react-icons/rx";
-import { HeightContext } from "../contexts/HeightContext";
-import { ItemsContext } from "../contexts/ItemsContext";
 import axios from "axios";
 
 const VITE_API_URL = import.meta.env.VITE_API_URL;
-
-const categories = [
-  "Electronics & Gadgets",
-  "Kitchen & Cooking",
-  "Books & Study Materials",
-  "Sports & Fitness Gear",
-  "Musical Instruments",
-  "Dorm & Bedroom Essentials",
-  "Room Decor",
-  "Community & Shared Resources",
-  "Digital Subscriptions & Accounts",
-  "Others",
-];
-
-const hostels = [
-  "ah-1",
-  "ah-2",
-  "ah-3",
-  "ah-4",
-  "ah-5",
-  "ah-6",
-  "ah-7",
-  "ah-8",
-  "ah-9",
-  "ch-1",
-  "ch-2",
-  "ch-3",
-  "ch-4",
-  "ch-5",
-  "ch-6",
-  "ch-7",
-  "dh-1",
-  "dh-2",
-  "dh-3",
-  "dh-4",
-  "dh-5",
-  "dh-6",
-];
 
 const initialFormState = {
   productName: "",
@@ -59,65 +19,110 @@ const initialFormState = {
   termsAgreed: false,
 };
 
-const AddItem = ({ setSearchVal, user }) => {
+const AddItem = ({ user, categories, setCategories }) => {
   const navigate = useNavigate();
   const { id } = useParams();
   const fileInputRef = useRef(null);
   const [isTermsOpen, setIsTermsOpen] = useState(false);
   const [previewImages, setPreviewImages] = useState([]);
   const [formErrors, setFormErrors] = useState({});
-  const { height } = useContext(HeightContext);
-  const { items, setItems } = useContext(ItemsContext);
   const [formData, setFormData] = useState(initialFormState);
+  const [hostels, setHostels] = useState();
 
-  // Centralized function to set form data and previews
-  const setItemData = (item, images = []) => {
+  // Simplified function to set form data from API response
+  const setItemData = (itemDetails) => {
     setFormData({
-      productName: item.itemName || "",
-      description: item.description || "",
-      price: item.itemPrice || "",
-      category: item.category || "",
-      hostel: item.sellerHostel || "",
-      phoneNumber: item.contactNumber || "",
-      images: images.length ? images : item.itemImage ? [item.itemImage] : [],
+      productName: itemDetails.name || "",
+      description: itemDetails.description || "",
+      price: itemDetails.price || "",
+      category: itemDetails.category || "",
+      hostel: itemDetails.hostel || "",
+      phoneNumber: itemDetails.phone || "",
+      images: itemDetails.images || [],
       termsAgreed: true,
     });
-    setPreviewImages(
-      images.length ? images : item.itemImage ? [item.itemImage] : []
-    );
+    setPreviewImages(itemDetails.images || []);
   };
 
+  useEffect(() => {
+    const getHostel = async () => {
+      try {
+        const res = await axios.get(`${VITE_API_URL}/hostels`, {
+          withCredentials: true,
+        });
+        setHostels(res.data);
+      } catch (err) {
+        console.log(err);
+      }
+    };
+    getHostel();
+
+    const getCategories = async () => {
+      try {
+        const res = await axios.get(`${VITE_API_URL}/categories`, {
+          withCredentials: true,
+        });
+        setCategories(res.data.data);
+      } catch (err) {
+        console.error("Error fetching categories:", err);
+      }
+    };
+    if (!categories || categories.length === 0) {
+      getCategories();
+    }
+  }, []);
+
   // AUTH: Block if not logged in
+  useEffect(() => {
+    const getuserdetails = async () => {
+      try {
+        const res = await axios.get(`${VITE_API_URL}/misc?id=1`, {
+          withCredentials: true,
+        });
+        console.log(res.data);
+        if (res.data) {
+          setFormData((prev) => ({
+            ...prev,
+            hostel: res.data.hostel,
+            phoneNumber: res.data.phone,
+          }));
+        }
+      } catch (err) {
+        console.error("Error fetching user details:", err);
+      }
+    };
+    if (!id) {
+      getuserdetails();
+    }
+  }, []);
+
   useEffect(() => {
     if (!user) {
       toast.error("You must be logged in to access this page.");
       navigate("/", { replace: true });
     }
-    // eslint-disable-next-line
-  }, [user]);
+  }, [user, navigate]);
 
-  // AUTHZ: Only owner can edit
+  // Fetch item data for editing
   useEffect(() => {
     const fetchItemForEdit = async () => {
-      if (id && items && user) {
-        const item = items.find((itm) => String(itm.id) === String(id));
-        if (!item) return;
-        if (item.sellerEmail !== user.email) {
-          toast.error("You are not authorized to edit this item.");
-          navigate("/", { replace: true });
-          return;
-        }
+      if (id) {
         try {
-          const res = await axios.get(`${VITE_API_URL}/${id}/images`);
-          setItemData(item, res.data?.images || []);
-        } catch {
-          setItemData(item);
+          const res = await axios.get(`${VITE_API_URL}/items/${id}`, {
+            withCredentials: true,
+          });
+
+          if (res.data && res.data.details) {
+            setItemData(res.data.details);
+          }
+        } catch (err) {
+          console.error("Error fetching item for edit:", err);
+          toast.error("Error loading item details");
         }
       }
     };
     fetchItemForEdit();
-    // eslint-disable-next-line
-  }, [id, items, user]);
+  }, [id]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -129,6 +134,8 @@ const AddItem = ({ setSearchVal, user }) => {
       setFormErrors((prev) => ({ ...prev, [name]: null }));
     }
   };
+
+  console.log(formData);
 
   const handleImageChange = (e) => {
     const files = Array.from(e.target.files);
@@ -184,7 +191,7 @@ const AddItem = ({ setSearchVal, user }) => {
     if (!formData.description.trim())
       errors.description = "Description is required";
     if (!String(formData.price).trim()) errors.price = "Price is required";
-    if (isNaN(Number(formData.price)) || Number(formData.price) <= 0)
+    if (isNaN(Number(formData.price)) || Number(formData.price) < 0)
       errors.price = "Please enter a valid price";
     if (!formData.category) errors.category = "Please select a category";
     if (!formData.hostel) errors.hostel = "Please select your hostel";
@@ -200,28 +207,45 @@ const AddItem = ({ setSearchVal, user }) => {
     return errors;
   };
 
+  const getCSRFTokenFromCookies = () => {
+    const name = "csrftoken=";
+    const decodedCookie = decodeURIComponent(document.cookie);
+    const cookies = decodedCookie.split(";");
+
+    for (let i = 0; i < cookies.length; i++) {
+      let c = cookies[i].trim();
+      if (c.indexOf(name) === 0) {
+        return c.substring(name.length, c.length);
+      }
+    }
+    return null;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!user) {
       toast.error("You must be logged in to perform this action.");
       return;
     }
+
     const errors = validateForm();
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
       return;
     }
+    const categoryId = categories.find(
+      (cat) => cat.name == formData.category
+    ).id;
+
+    console.log(categoryId);
 
     const formDataToSend = new FormData();
     formDataToSend.append("itemName", formData.productName);
     formDataToSend.append("description", formData.description);
     formDataToSend.append("itemPrice", Number(formData.price));
-    formDataToSend.append("category", formData.category);
+    formDataToSend.append("category", categoryId);
     formDataToSend.append("sellerHostel", formData.hostel);
     formDataToSend.append("contactNumber", formData.phoneNumber);
-    formDataToSend.append("sellerName", user.given_name + user.family_name);
-    formDataToSend.append("sellerEmail", user.email);
-    formDataToSend.append("campus", user.campus || "GOA");
     formData.images.forEach((img) => {
       if (img instanceof File) {
         formDataToSend.append("images", img);
@@ -231,25 +255,32 @@ const AddItem = ({ setSearchVal, user }) => {
     });
 
     try {
-      if (id) {
-        await axios.put(`${VITE_API_URL}/item/${id}`, formDataToSend, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
-        toast.success("Item updated successfully!");
-      } else {
-        const res = await axios.post(`${VITE_API_URL}/item/`, formDataToSend, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
-        console.log(res);
-
-        toast.success("Product listed successfully!");
-        if (setItems && res.data) {
-          setItems((prev) => [...prev, res.data]);
-        }
+      const csrfToken = getCSRFTokenFromCookies();
+      if (!csrfToken) {
+        toast.error("Failed to retrieve CSRF token.");
+        return;
       }
+
+      const endpoint = id
+        ? `${VITE_API_URL}/items/${id}`
+        : `${VITE_API_URL}/items/`;
+      const res = await axios.post(endpoint, formDataToSend, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+          "X-CSRFToken": csrfToken,
+        },
+        withCredentials: true,
+      });
+
+      toast.success(
+        id ? "Item updated successfully!" : "Product listed successfully!"
+      );
+      console.log(res);
+
       navigate("/mylistings");
     } catch (err) {
-      toast.error("Error saving item. Please try again." || err);
+      toast.error("Error saving item. Please try again.");
+      console.error(err);
     }
   };
 
@@ -268,7 +299,7 @@ const AddItem = ({ setSearchVal, user }) => {
   return (
     <div
       className="py-8 px-4 sm:px-6 lg:px-8 w-[100vw] dark:bg-gray-900 overflow-auto"
-      style={{ height }}
+      style={{ height: "calc(100dvh - 56px)" }}
     >
       <motion.div
         initial="hidden"
@@ -391,8 +422,8 @@ const AddItem = ({ setSearchVal, user }) => {
               >
                 <option value="">Select a category</option>
                 {categories.map((category, index) => (
-                  <option key={index} value={category}>
-                    {category}
+                  <option key={index} value={category.name}>
+                    {category.name}
                   </option>
                 ))}
               </select>
@@ -421,10 +452,12 @@ const AddItem = ({ setSearchVal, user }) => {
                     : "border-gray-300 dark:border-gray-600"
                 } rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white`}
               >
-                <option value="">Select your hostel</option>
-                {hostels.map((hostel, index) => (
-                  <option key={index} value={hostel}>
-                    {hostel.toUpperCase()}
+                <option value="" style={{ display: "none" }}>
+                  Select your hostel
+                </option>
+                {hostels?.map((hostel, index) => (
+                  <option key={index} value={hostel.name}>
+                    {hostel.name.toUpperCase()}
                   </option>
                 ))}
               </select>

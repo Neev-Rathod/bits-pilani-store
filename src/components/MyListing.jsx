@@ -1,33 +1,76 @@
-import React, { useContext, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { ItemsContext } from "../contexts/ItemsContext";
 import { motion } from "framer-motion";
 import {
   FiPhone,
   FiCalendar,
-  FiTag,
   FiPackage,
   FiCheckCircle,
   FiXCircle,
   FiEdit2,
   FiTrash2,
+  FiRotateCcw,
 } from "react-icons/fi";
-import { HeightContext } from "../contexts/HeightContext";
 import axios from "axios";
 import { toast } from "react-toastify";
 
 const VITE_API_URL = import.meta.env.VITE_API_URL;
 
-const MyListings = ({ user }) => {
-  const { items, loading, error, setItems } = useContext(ItemsContext);
-  const { height } = useContext(HeightContext);
+const MyListings = () => {
   const navigate = useNavigate();
 
-  const [markLoading, setMarkLoading] = useState({});
-  const [deleteLoading, setDeleteLoading] = useState({});
+  // State management
+  const [myItems, setMyItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [operationLoading, setOperationLoading] = useState({});
+  const [selectedItems, setSelectedItems] = useState(new Set());
+  const [isSelecting, setIsSelecting] = useState(false);
+  const [bulkLoading, setBulkLoading] = useState({
+    delete: false,
+    markSold: false,
+    markUnsold: false,
+    repost: false,
+  });
 
-  const myItems =
-    items?.filter((item) => item.sellerEmail === user.email) || [];
+  // Fetch all items from server
+  const fetchMyListings = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await axios.get(`${VITE_API_URL}/mylistings`, {
+        withCredentials: true,
+      });
+      setMyItems(response.data.items || []);
+    } catch (err) {
+      const errorMessage =
+        err.response?.data?.message || "Failed to fetch listings";
+      setError(errorMessage);
+      console.error("Error fetching listings:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Initial data fetch
+  useEffect(() => {
+    fetchMyListings();
+  }, [fetchMyListings]);
+
+  // Utility functions
+  const getCSRFTokenFromCookies = () => {
+    const name = "csrftoken=";
+    const decodedCookie = decodeURIComponent(document.cookie);
+    const cookies = decodedCookie.split(";");
+
+    for (let i = 0; i < cookies.length; i++) {
+      let c = cookies[i].trim();
+      if (c.indexOf(name) === 0) {
+        return c.substring(name.length, c.length);
+      }
+    }
+    return null;
+  };
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -38,56 +81,179 @@ const MyListings = ({ user }) => {
     });
   };
 
+  const extractPhoneNumber = (url) => {
+    try {
+      const urlObj = new URL(url);
+      const pathParts = urlObj.pathname.split("/");
+      return pathParts[1];
+    } catch (e) {
+      return null;
+    }
+  };
+
   const formatPrice = (price) => {
     return `₹${price.toLocaleString("en-IN")}`;
   };
 
-  // Mark as Sold/Unsold Handler (Axios)
-  const handleMarkSold = async (itemId, newStatus) => {
-    setMarkLoading((prev) => ({ ...prev, [itemId]: true }));
+  // Main operation handler - simplified to just perform action and refresh
+  const handleItemOperation = async (method, ids, confirmMessage = null) => {
+    if (ids.length === 0) return;
+
+    // Show confirmation dialog if provided
+    if (confirmMessage && !window.confirm(confirmMessage)) return;
+
+    // Normalize ids to array
+    const idsArray = Array.isArray(ids) ? ids : [ids];
+    const isBulkOperation = idsArray.length > 1;
+
+    // Set loading state
+    const loadingKey = method
+      .toLowerCase()
+      .replace(/\s+/g, "")
+      .replace("_", "");
+    if (isBulkOperation) {
+      setBulkLoading((prev) => ({ ...prev, [loadingKey]: true }));
+    } else {
+      setOperationLoading((prev) => ({ ...prev, [idsArray[0]]: method }));
+    }
+
     try {
-      await axios.put(`${VITE_API_URL}/updatestats/${itemId}`, {
-        id: itemId,
-        issold: newStatus,
-      });
-      if (setItems) {
-        setItems((prevItems) =>
-          prevItems.map((item) =>
-            item.id === itemId ? { ...item, issold: newStatus } : item
-          )
-        );
-      }
-    } catch (err) {
-      toast.error(
-        "Error updating item status: " +
-          (err.response?.data?.message || err.message)
+      const token = getCSRFTokenFromCookies();
+
+      // Perform the operation
+      await axios.post(
+        `${VITE_API_URL}/mylistings/`,
+        {
+          method: method,
+          ids: idsArray,
+        },
+        {
+          headers: {
+            "X-CSRFToken": token,
+            "Content-Type": "application/json",
+          },
+          withCredentials: true,
+        }
       );
+
+      await fetchMyListings();
+
+      // Show success message
+      const operationNames = {
+        DELETE: "deleted",
+        "MARK SOLD": "marked as sold",
+        "MARK UNSOLD": "marked as unsold",
+        REPOST: "reposted",
+      };
+
+      const actionName = operationNames[method] || "updated";
+      toast.success(`${idsArray.length} item(s) ${actionName} successfully`);
+
+      // Clear selection after bulk operations
+
+      setSelectedItems(new Set());
+      setIsSelecting(false);
+    } catch (err) {
+      const errorMessage = err.response?.data?.message || err.message;
+      toast.error(`Error performing operation: ${errorMessage}`);
+      console.error("Operation error:", err);
     } finally {
-      setMarkLoading((prev) => ({ ...prev, [itemId]: false }));
+      // Clear loading state
+      if (isBulkOperation) {
+        setBulkLoading((prev) => ({ ...prev, [loadingKey]: false }));
+      } else {
+        setOperationLoading((prev) => ({ ...prev, [idsArray[0]]: false }));
+      }
     }
   };
 
-  // Delete Handler (Axios)
-  const handleDelete = async (itemId) => {
-    if (!window.confirm("Are you sure you want to delete this item?")) return;
-    setDeleteLoading((prev) => ({ ...prev, [itemId]: true }));
-    try {
-      await axios.delete(`${VITE_API_URL}/updatestats/${itemId}`, {
-        status: "deleted",
-        id: itemId,
-      });
-      if (setItems) {
-        setItems((prevItems) => prevItems.filter((item) => item.id !== itemId));
-      }
-    } catch (err) {
-      alert(
-        "Error deleting item: " + (err.response?.data?.message || err.message)
-      );
-    } finally {
-      setDeleteLoading((prev) => ({ ...prev, [itemId]: false }));
+  // Selection handlers
+  const handleSelectItem = (itemId) => {
+    const newSelectedItems = new Set(selectedItems);
+    if (newSelectedItems.has(itemId)) {
+      newSelectedItems.delete(itemId);
+    } else {
+      newSelectedItems.add(itemId);
+    }
+    setSelectedItems(newSelectedItems);
+  };
+
+  const handleSelectAll = () => {
+    if (selectedItems.size === myItems?.length) {
+      setSelectedItems(new Set());
+    } else {
+      setSelectedItems(new Set(myItems?.map((item) => item.id)));
     }
   };
 
+  const handleCancelSelection = () => {
+    setIsSelecting(false);
+    setSelectedItems(new Set());
+  };
+
+  // Individual operation handlers
+  const handleMarkSold = (itemId, newStatus) => {
+    const method = newStatus ? "MARK SOLD" : "MARK UNSOLD";
+    handleItemOperation(method, itemId);
+  };
+
+  const handleDelete = (itemId) => {
+    handleItemOperation(
+      "DELETE",
+      itemId,
+      "Are you sure you want to delete this item?"
+    );
+  };
+
+  const handleRepost = (itemId) => {
+    handleItemOperation("REPOST", itemId);
+  };
+
+  // Bulk operation handlers
+  const handleBulkDelete = () => {
+    const ids = Array.from(selectedItems);
+    handleItemOperation(
+      "DELETE",
+      ids,
+      `Are you sure you want to delete ${ids.length} selected items?`
+    );
+  };
+
+  const handleBulkMarkSold = () => {
+    const ids = Array.from(selectedItems);
+    handleItemOperation("MARK SOLD", ids);
+  };
+
+  const handleBulkMarkUnsold = () => {
+    const ids = Array.from(selectedItems);
+    handleItemOperation("MARK UNSOLD", ids);
+  };
+
+  const handleBulkRepost = () => {
+    const ids = Array.from(selectedItems);
+    handleItemOperation("REPOST", ids);
+  };
+
+  // Navigation handlers
+  const handleItemClick = (itemId, e) => {
+    if (e.target.closest("button")) {
+      return;
+    }
+
+    if (isSelecting) {
+      handleSelectItem(itemId);
+      return;
+    }
+
+    navigate(`/item/${itemId}`);
+  };
+
+  // Helper function to check if an operation is loading
+  const isOperationLoading = (itemId, operation) => {
+    return operationLoading[itemId] === operation;
+  };
+
+  // Loading state
   if (loading) {
     return (
       <div className="min-h-[100dvh] bg-gray-50 dark:bg-gray-900 p-6">
@@ -100,6 +266,7 @@ const MyListings = ({ user }) => {
     );
   }
 
+  // Error state
   if (error) {
     return (
       <div className="min-h-[100dvh] bg-gray-50 dark:bg-gray-900 p-6">
@@ -109,16 +276,23 @@ const MyListings = ({ user }) => {
               Error loading your listings
             </div>
             <p className="text-gray-600 dark:text-gray-400 mt-2">{error}</p>
+            <button
+              onClick={fetchMyListings}
+              className="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors duration-200"
+            >
+              Retry
+            </button>
           </div>
         </div>
       </div>
     );
   }
 
+  // Main render
   return (
     <div
       className="overflow-auto bg-gray-50 dark:bg-gray-900 transition-colors duration-200"
-      style={{ height }}
+      style={{ height: "calc(100dvh - 56px)" }}
     >
       <div className="max-w-7xl mx-auto p-6">
         {/* Header */}
@@ -134,44 +308,152 @@ const MyListings = ({ user }) => {
           <p className="text-gray-600 dark:text-gray-400">
             Manage and view all your listed items
           </p>
-          <div className="mt-4 bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-700">
-            <div className="flex items-center gap-2">
-              <FiPackage className="text-blue-600 dark:text-blue-400" />
-              <span className="text-gray-900 dark:text-white font-medium">
-                Total Items: {myItems.length}
-              </span>
+
+          {/* Stats and Select Controls */}
+          <div className="mt-4 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-700">
+              <div className="flex items-center gap-2">
+                <FiPackage className="text-blue-600 dark:text-blue-400" />
+                <span className="text-gray-900 dark:text-white font-medium">
+                  Total Items: {myItems?.length || 0}
+                </span>
+              </div>
             </div>
+
+            {/* Select Controls */}
+            {myItems?.length > 0 && (
+              <div className="flex gap-2">
+                {!isSelecting ? (
+                  <button
+                    onClick={() => setIsSelecting(true)}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors duration-200 font-medium text-sm"
+                  >
+                    <span className="hidden sm:inline">Select Items</span>
+                    <span className="sm:hidden">Select</span>
+                  </button>
+                ) : (
+                  <div className="flex gap-2 flex-wrap">
+                    <button
+                      onClick={handleSelectAll}
+                      className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-lg transition-colors duration-200 font-medium text-sm"
+                    >
+                      {selectedItems.size === myItems?.length
+                        ? "Deselect All"
+                        : "Select All"}
+                    </button>
+                    <button
+                      onClick={handleCancelSelection}
+                      className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg transition-colors duration-200 font-medium text-sm"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
+
+          {/* Bulk Actions Bar */}
+          {isSelecting && selectedItems.size > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-4 bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-700"
+            >
+              <div className="flex flex-wrap gap-2 items-center">
+                <span className="text-gray-900 dark:text-white font-medium mr-2">
+                  {selectedItems.size} selected:
+                </span>
+
+                <button
+                  onClick={handleBulkDelete}
+                  disabled={bulkLoading.delete}
+                  className={`flex items-center gap-1 bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg transition-colors duration-200 text-sm font-medium ${
+                    bulkLoading.delete ? "opacity-60 cursor-not-allowed" : ""
+                  }`}
+                >
+                  <FiTrash2 className="text-xs" />
+                  {bulkLoading.delete ? "Deleting..." : "Delete"}
+                </button>
+
+                <button
+                  onClick={handleBulkMarkSold}
+                  disabled={bulkLoading.marksold}
+                  className={`flex items-center gap-1 bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg transition-colors duration-200 text-sm font-medium ${
+                    bulkLoading.marksold ? "opacity-60 cursor-not-allowed" : ""
+                  }`}
+                >
+                  <FiCheckCircle className="text-xs" />
+                  {bulkLoading.marksold ? "Marking..." : "Mark Sold"}
+                </button>
+
+                <button
+                  onClick={handleBulkMarkUnsold}
+                  disabled={bulkLoading.markunsold}
+                  className={`flex items-center gap-1 bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1.5 rounded-lg transition-colors duration-200 text-sm font-medium ${
+                    bulkLoading.markunsold
+                      ? "opacity-60 cursor-not-allowed"
+                      : ""
+                  }`}
+                >
+                  <FiXCircle className="text-xs" />
+                  {bulkLoading.markunsold ? "Marking..." : "Mark Unsold"}
+                </button>
+
+                <button
+                  onClick={handleBulkRepost}
+                  disabled={bulkLoading.repost}
+                  className={`flex items-center gap-1 bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded-lg transition-colors duration-200 text-sm font-medium ${
+                    bulkLoading.repost ? "opacity-60 cursor-not-allowed" : ""
+                  }`}
+                >
+                  <FiRotateCcw className="text-xs" />
+                  {bulkLoading.repost ? "Reposting..." : "Repost All"}
+                </button>
+              </div>
+            </motion.div>
+          )}
         </motion.div>
 
         {/* Items Grid */}
-        {myItems.length > 0 ? (
+        {myItems?.length > 0 ? (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5, delay: 0.2 }}
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-18 lg:mb-0"
           >
-            {myItems.map((item, index) => (
+            {myItems?.map((item, index) => (
               <motion.div
                 key={item.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
-                className={`bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 hover:scale-105 ${
+                className={`bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 hover:scale-105 cursor-pointer relative ${
                   item.issold ? "opacity-80 grayscale" : ""
-                }`}
+                } ${selectedItems.has(item.id) ? "ring-2 ring-blue-500" : ""}`}
+                onClick={(e) => handleItemClick(item.id, e)}
               >
+                {/* Selection Checkbox */}
+                {isSelecting && (
+                  <div className="absolute top-2 right-2 z-10">
+                    <div className="bg-white bg-opacity-90 rounded-full p-1">
+                      <input
+                        type="checkbox"
+                        checked={selectedItems.has(item.id)}
+                        onChange={() => handleSelectItem(item.id)}
+                        className="w-5 h-5 text-blue-600 bg-white border-2 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                      />
+                    </div>
+                  </div>
+                )}
+
                 {/* Item Image */}
                 <div className="relative h-48 overflow-hidden">
                   <img
-                    src={item.itemImage}
-                    alt={item.itemName}
+                    src={item.firstimage}
+                    alt={item.title}
                     className="w-full h-full object-cover"
-                    onError={(e) => {
-                      e.target.src =
-                        "https://via.placeholder.com/300x200?text=No+Image";
-                    }}
                   />
                   {/* Sold Badge */}
                   {item.issold && (
@@ -186,37 +468,26 @@ const MyListings = ({ user }) => {
                   {/* Item Name and Price */}
                   <div className="mb-4">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2">
-                      {item.itemName}
+                      {item.title}
                     </h3>
                     <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                      {formatPrice(item.itemPrice)}
+                      {formatPrice(item.price)}
                     </div>
                   </div>
-
-                  {/* Category */}
-                  <div className="flex items-center gap-2 mb-3">
-                    <FiTag className="text-gray-500 dark:text-gray-400 text-sm" />
-                    <span className="text-sm text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">
-                      {item.category}
-                    </span>
-                  </div>
-
                   {/* Date Added */}
                   <div className="flex items-center gap-2 mb-3">
                     <FiCalendar className="text-gray-500 dark:text-gray-400 text-sm" />
                     <span className="text-sm text-gray-600 dark:text-gray-300">
-                      Listed on {formatDate(item.dateAdded)}
+                      Listed on {formatDate(item.date)}
                     </span>
                   </div>
-
                   {/* Contact Number */}
                   <div className="flex items-center gap-2 mb-4">
                     <FiPhone className="text-gray-500 dark:text-gray-400 text-sm" />
                     <span className="text-sm text-gray-600 dark:text-gray-300 font-mono">
-                      {item.contactNumber}
+                      {extractPhoneNumber(item.contact)}
                     </span>
                   </div>
-
                   {/* Action Buttons */}
                   <div className="flex flex-wrap gap-2 pt-3 border-t border-gray-200 dark:border-gray-700">
                     <button
@@ -228,44 +499,50 @@ const MyListings = ({ user }) => {
                     </button>
                     <button
                       className={`flex-1 flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white py-2 px-3 rounded-lg transition-colors duration-200 text-sm font-semibold shadow-md ${
-                        deleteLoading[item.id]
+                        isOperationLoading(item.id, "DELETE")
                           ? "opacity-60 cursor-not-allowed"
                           : ""
                       }`}
-                      disabled={deleteLoading[item.id]}
+                      disabled={isOperationLoading(item.id, "DELETE")}
                       onClick={() => handleDelete(item.id)}
                       type="button"
                     >
                       <FiTrash2 />
-                      {deleteLoading[item.id] ? "Deleting..." : "Delete"}
+                      {isOperationLoading(item.id, "DELETE")
+                        ? "Deleting..."
+                        : "Delete"}
                     </button>
                     {item.issold ? (
                       <button
                         className={`flex-1 flex items-center justify-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-white py-2 px-3 rounded-lg transition-colors duration-200 text-sm font-semibold shadow-md ${
-                          markLoading[item.id]
+                          isOperationLoading(item.id, "MARK UNSOLD")
                             ? "opacity-60 cursor-not-allowed"
                             : ""
                         }`}
-                        disabled={markLoading[item.id]}
+                        disabled={isOperationLoading(item.id, "MARK UNSOLD")}
                         onClick={() => handleMarkSold(item.id, false)}
                         type="button"
                       >
                         <FiXCircle />
-                        {markLoading[item.id] ? "Marking..." : "Mark as Unsold"}
+                        {isOperationLoading(item.id, "MARK UNSOLD")
+                          ? "Marking..."
+                          : "Mark as Unsold"}
                       </button>
                     ) : (
                       <button
-                        className={`flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white py-2 px-3 rounded-lg transition-colors duration-200 text-sm font-semibold shadow-md ${
-                          markLoading[item.id]
+                        className={`flex-1 flex items-center whitespace-nowrap justify-center gap-2 bg-green-600 hover:bg-green-700 text-white py-2 px-3 rounded-lg transition-colors duration-200 text-sm font-semibold shadow-md ${
+                          isOperationLoading(item.id, "MARK SOLD")
                             ? "opacity-60 cursor-not-allowed"
                             : ""
                         }`}
-                        disabled={markLoading[item.id]}
+                        disabled={isOperationLoading(item.id, "MARK SOLD")}
                         onClick={() => handleMarkSold(item.id, true)}
                         type="button"
                       >
                         <FiCheckCircle />
-                        {markLoading[item.id] ? "Marking..." : "Mark as Sold"}
+                        {isOperationLoading(item.id, "MARK SOLD")
+                          ? "Marking..."
+                          : "Mark as Sold"}
                       </button>
                     )}
                   </div>

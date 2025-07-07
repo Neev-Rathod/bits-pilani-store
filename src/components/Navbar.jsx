@@ -10,13 +10,12 @@ import {
   FaSignOutAlt,
   FaMoon,
   FaSun,
-  FaHome,
+  FaUniversity,
   FaCheck,
 } from "react-icons/fa";
 import { IoMdClose } from "react-icons/io";
 import { IoIosArrowDown } from "react-icons/io";
 import { IoAdd } from "react-icons/io5";
-import { BiSolidCategory } from "react-icons/bi";
 import { useNavigate } from "react-router-dom";
 
 function Navbar({
@@ -32,7 +31,6 @@ function Navbar({
   const [showDropdown, setShowDropdown] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [showCampuses, setShowCampuses] = useState(false);
-  // const [selectedCampus, setSelectedCampus] = useState("Pilani");
   const [isScrolled, setIsScrolled] = useState(false);
   const navigate = useNavigate();
   const searchInputRef = useRef(null);
@@ -141,13 +139,14 @@ function Navbar({
       {!showSearch && (
         <motion.h1
           className="text-xl sm:text-2xl lg:text-3xl font-bold cursor-pointer"
-          onClick={() => navigate("/")}
+          onClick={() => {
+            navigate("/");
+            location.reload();
+          }}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
         >
-          <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent dark:from-blue-400 dark:to-purple-400">
-            Bits Pawnshop
-          </span>
+          <span className=" dark:text-white text-black">Student Store</span>
         </motion.h1>
       )}
 
@@ -227,7 +226,7 @@ function Navbar({
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              <FaHome className="mr-2 text-blue-500 dark:text-blue-400" />
+              <FaUniversity className="mr-2 text-blue-500 dark:text-blue-400" />
               <span className="text-gray-800 dark:text-white font-medium">
                 {selectedCampus}
               </span>
@@ -247,7 +246,7 @@ function Navbar({
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
             >
-              <FaHome className="text-blue-500 dark:text-blue-400" />
+              <FaUniversity className="text-blue-500 dark:text-blue-400" />
             </motion.button>
 
             {/* Dropdown Menu with animation */}
@@ -295,7 +294,7 @@ function Navbar({
 
           {/* Sell Item Button */}
           <motion.div
-            className="hidden lg:flex items-center cursor-pointer text-white bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 px-4 py-2 rounded-full shadow-md"
+            className="hidden lg:flex items-center cursor-pointer text-white bg-purple-500 hover:bg-600  px-4 py-2 rounded-full shadow-md"
             onClick={() => navigate("/add")}
             whileHover={{
               scale: 1.05,
@@ -305,17 +304,6 @@ function Navbar({
           >
             <IoAdd className="mr-2" />
             <p>Sell Item</p>
-          </motion.div>
-
-          {/* Categories Button */}
-          <motion.div
-            className="hidden lg:flex items-center cursor-pointer dark:text-white bg-gray-50 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 px-4 py-2 rounded-full border border-gray-200 dark:border-gray-600"
-            onClick={() => navigate("/categories")}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <BiSolidCategory className="mr-2 text-purple-500 dark:text-purple-400" />
-            <p className="text-gray-800 dark:text-white">Categories</p>
           </motion.div>
 
           {/* Theme Toggle Button with animation */}
@@ -358,10 +346,14 @@ function Navbar({
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
             >
-              <FaUserCircle
-                className="text-gray-800 dark:text-white text-2xl"
-                size={30}
-              />
+              {user.picture ? (
+                <img src={user.picture} className="w-[30px] rounded-full"></img>
+              ) : (
+                <FaUserCircle
+                  className="text-gray-800 dark:text-white text-2xl"
+                  size={30}
+                />
+              )}
             </motion.button>
 
             <AnimatePresence>
@@ -374,18 +366,6 @@ function Navbar({
                   transition={{ duration: 0.2 }}
                 >
                   <ul className="py-1">
-                    {/* <motion.li 
-                                            className="px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center cursor-pointer border-b dark:border-gray-700"
-                                            initial={{ opacity: 0, x: -20 }}
-                                            animate={{ opacity: 1, x: 0 }}
-                                            transition={{ delay: 0.05 }}
-                                            whileHover={{ x: 5, backgroundColor: darktheme === 'dark' ? '#374151' : '#f9fafb' }}
-                                        >
-                                            <div className="flex flex-col">
-                                                <span className="font-medium dark:text-white">John Doe</span>
-                                                <span className="text-sm text-gray-500 dark:text-gray-400">john.doe@gmail.com</span>
-                                            </div>
-                                        </motion.li> */}
                     <motion.li
                       className="px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center cursor-pointer"
                       initial={{ opacity: 0, x: -20 }}
