@@ -70,7 +70,11 @@ const Footer = () => {
               </motion.button>
             ) : (
               <motion.button
-                onClick={() => navigate(path)}
+                onClick={() => {
+                  navigate(path);
+                  if (path === "/")
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
                 className="flex flex-col items-center w-full"
                 whileTap={{ scale: 0.92 }}
                 aria-label={label}

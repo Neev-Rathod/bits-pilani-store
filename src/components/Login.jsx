@@ -3,12 +3,23 @@ import { jwtDecode } from "jwt-decode";
 import { motion } from "framer-motion";
 import { FcGoogle } from "react-icons/fc";
 import { toast } from "react-toastify";
-
+import { useState } from "react";
+import TermsModal from "./TermsAndCondition";
 const Login = ({ onLogin }) => {
+  const [isOpen, setIsOpen] = useState(false);
+
   const handleLoginSuccess = (credentialResponse) => {
     try {
       const user = jwtDecode(credentialResponse.credential);
       onLogin(user);
+      toast.success(`Welcome ${user.name}! 🎉`, {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
       // location.reload();
     } catch (error) {
       console.error("Login decoding failed:", error);
@@ -21,10 +32,7 @@ const Login = ({ onLogin }) => {
 
   const handleLoginError = () => {
     console.log("Login Failed");
-    toast.error("Login failed. Please try again.", {
-      position: "top-right",
-      autoClose: 3000,
-    });
+    toast.error("Login failed. Please try again.");
   };
 
   const containerVariants = {
@@ -50,6 +58,7 @@ const Login = ({ onLogin }) => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4">
+      {isOpen && <TermsModal isOpen={isOpen} setIsOpen={setIsOpen} />}
       <div className="max-w-6xl w-full flex flex-col gap-8 items-center">
         {/* Left Side - Welcome Content */}
         <motion.div
@@ -127,12 +136,11 @@ const Login = ({ onLogin }) => {
               >
                 <p>
                   By signing in, you agree to our{" "}
-                  <span className="text-blue-600 hover:underline cursor-pointer">
+                  <span
+                    className="text-blue-600 hover:underline cursor-pointer"
+                    onClick={() => setIsOpen(true)}
+                  >
                     Terms of Service
-                  </span>{" "}
-                  and{" "}
-                  <span className="text-blue-600 hover:underline cursor-pointer">
-                    Privacy Policy
                   </span>
                 </p>
               </motion.div>

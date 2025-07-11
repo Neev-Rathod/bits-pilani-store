@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, memo, useMemo, useCallback } from "react";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
-import { FiCalendar, FiChevronLeft, FiChevronRight } from "react-icons/fi";
+import { FiCalendar } from "react-icons/fi";
 import {
   FiMonitor,
   FiCoffee,
@@ -34,6 +34,41 @@ const categoryIcons = {
 
 const ITEMS_PER_PAGE = 20;
 
+// Skeleton loader component
+const SkeletonLoader = () => {
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-700 flex flex-col animate-pulse">
+      <div className="relative aspect-[3/4] overflow-hidden bg-gray-200 dark:bg-gray-700">
+        <div className="w-full h-full bg-gray-300 dark:bg-gray-600"></div>
+      </div>
+      <div className="p-2 flex-grow">
+        <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded mb-2"></div>
+        <div className="space-y-1">
+          <div className="h-5 bg-gray-300 dark:bg-gray-600 rounded w-16"></div>
+          <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-24"></div>
+          <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded w-20"></div>
+        </div>
+      </div>
+      <div className="p-2 bg-gray-50 dark:bg-gray-700/50 border-t border-gray-200 dark:border-gray-700">
+        <div className="w-full h-8 bg-gray-300 dark:bg-gray-600 rounded"></div>
+      </div>
+    </div>
+  );
+};
+
+// Skeleton grid component
+const SkeletonGrid = ({ count = 10 }) => {
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6">
+      {Array(count)
+        .fill(0)
+        .map((_, index) => (
+          <SkeletonLoader key={index} />
+        ))}
+    </div>
+  );
+};
+
 const Home = ({
   searchVal = "",
   selectedCategory,
@@ -48,10 +83,11 @@ const Home = ({
   const [currentPage, setCurrentPage] = useState(1);
   const [sortType, setSortType] = useState("newest");
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(null);
   const [categoryScrollRef, setCategoryScrollRef] = useState(null);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [pageInputValue, setPageInputValue] = useState("");
+  const [hasMore, setHasMore] = useState(true);
   const [debouncedSearchVal, setDebouncedSearchVal] = useState(searchVal);
   const mainContainerRef = useRef(null);
   const navigate = useNavigate();
@@ -80,132 +116,134 @@ const Home = ({
   };
 
   // Fetch items from API
-
-  const fetchItems = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const params = new URLSearchParams();
-
-      // Add parameters
-      if (debouncedSearchVal && debouncedSearchVal.trim() !== "") {
-        params.append("q", debouncedSearchVal.trim());
-      }
-
-      if (selectedCategory && selectedCategory !== "All Categories") {
-        params.append("cat", selectedCategory);
-      }
-
-      if (selectedCampus && selectedCampus !== "All Campuses") {
-        params.append("c", selectedCampus);
-      }
-
-      params.append("p", currentPage.toString());
-      params.append("s", getSortValue(sortType).toString());
-
-      // Make both API calls with axios
-      const response = await axios.get(
-        `${import.meta.env.VITE_API_URL}/items?${params.toString()}`,
-        {
-          withCredentials: true, // Required to send cookies
-        }
-      );
-      const res = await axios.get(
-        `${import.meta.env.VITE_API_URL}/categories`,
-        {
-          withCredentials: true, // Required to send cookies
-        }
-      );
-      setCategories(res.data.data); // Set categories data
-      console.log("Categories fetched:", res);
-      // Set categories data
-      console.log(response);
-
-      // Check response status and set items data
-      if (response.data.status === "ok") {
-        setItems(response.data.items);
-        setTotalItems(response.data.total_items);
-        setTotalItemsCat(response.data.total_items_cat || {});
+  const fetchItems = useCallback(
+    async (page = 1, isLoadMore = false) => {
+      if (isLoadMore) {
+        setLoadingMore(true);
       } else {
-        setError("Failed to fetch items");
+        setLoading(true);
       }
-    } catch (err) {
-      setError(err.response?.data?.message || "Failed to fetch items");
-    } finally {
-      setLoading(false);
-    }
-  }, [
-    debouncedSearchVal,
-    selectedCategory,
-    selectedCampus,
-    currentPage,
-    sortType,
-  ]);
+      setError(null);
+
+      try {
+        const params = new URLSearchParams();
+
+        // Add parameters
+        if (debouncedSearchVal && debouncedSearchVal.trim() !== "") {
+          params.append("q", debouncedSearchVal.trim());
+        }
+
+        if (selectedCategory && selectedCategory !== "All Categories") {
+          params.append("cat", selectedCategory);
+        }
+
+        if (selectedCampus && selectedCampus !== "All Campuses") {
+          params.append("c", selectedCampus);
+        }
+
+        params.append("p", page.toString());
+        params.append("s", getSortValue(sortType).toString());
+
+        // Make both API calls with axios
+        const response = await axios.get(
+          `${import.meta.env.VITE_API_URL}/items?${params.toString()}`,
+          {
+            withCredentials: true,
+          }
+        );
+
+        // Only fetch categories on initial load
+        if (!isLoadMore) {
+          const res = await axios.get(
+            `${import.meta.env.VITE_API_URL}/categories`,
+            {
+              withCredentials: true,
+            }
+          );
+          setCategories(res.data.data);
+        }
+
+        // Check response status and set items data
+        if (response.data.status === "ok") {
+          const newItems = response.data.items;
+
+          if (isLoadMore) {
+            setItems((prev) => [...prev, ...newItems]);
+          } else {
+            setItems(newItems);
+          }
+
+          setTotalItems(response.data.total_items);
+          setTotalItemsCat(response.data.total_items_cat || {});
+
+          // Check if there are more items to load
+          const totalPages = Math.ceil(
+            response.data.total_items / ITEMS_PER_PAGE
+          );
+          setHasMore(page < totalPages);
+        } else {
+          setError("Failed to fetch items");
+        }
+      } catch (err) {
+        setError(err.response?.data?.message || "Failed to fetch items");
+      } finally {
+        setLoading(false);
+        setLoadingMore(false);
+      }
+    },
+    [
+      debouncedSearchVal,
+      selectedCategory,
+      selectedCampus,
+      sortType,
+      setCategories,
+    ]
+  );
 
   const allCategoriesOption = {
     id: "All Categories",
     name: "All Categories",
   };
-  console.log("Categories:", categories);
 
   const categoriesWithAll = [allCategoriesOption, ...categories];
-  // Fetch items when dependencies change
-  useEffect(() => {
-    fetchItems();
-  }, [fetchItems]);
 
-  // Reset to page 1 when filters change
+  // Initial fetch
   useEffect(() => {
     setCurrentPage(1);
-    setPageInputValue("");
+    setItems([]);
+    setHasMore(true);
+    fetchItems(1, false);
   }, [debouncedSearchVal, selectedCategory, selectedCampus, sortType]);
+
+  // Infinite scroll handler
+  const handleScroll = useCallback(() => {
+    if (!mainContainerRef.current || loading || loadingMore || !hasMore) return;
+
+    const { scrollTop, scrollHeight, clientHeight } = mainContainerRef.current;
+
+    // Load more when user is near the bottom (200px threshold)
+    if (scrollHeight - scrollTop - clientHeight < 200) {
+      const nextPage = currentPage + 1;
+      setCurrentPage(nextPage);
+      fetchItems(nextPage, true);
+    }
+  }, [currentPage, loading, loadingMore, hasMore, fetchItems]);
+
+  // Attach scroll listener
+  useEffect(() => {
+    const container = mainContainerRef.current;
+    if (container) {
+      container.addEventListener("scroll", handleScroll);
+      return () => container.removeEventListener("scroll", handleScroll);
+    }
+  }, [handleScroll]);
 
   // Handle sold/unsold filtering (client-side for now)
   const displayItems = useMemo(() => {
     let result = [...items];
 
-    if (sortType === "sold") {
-      result = result.filter((item) => item.issold);
-    } else if (sortType === "unsold") {
-      result = result.filter((item) => !item.issold);
-    }
-
     return result;
   }, [items, sortType]);
-
-  // Calculate total pages
-  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
-
-  useEffect(() => {
-    if (mainContainerRef.current) {
-      mainContainerRef.current.scrollTo({
-        top: 0,
-        behavior: "smooth",
-      });
-    }
-    setPageInputValue(""); // Clear input after page change
-  }, [currentPage]);
-
-  // Change page
-  const paginate = (pageNumber) => {
-    if (pageNumber >= 1 && pageNumber <= totalPages) {
-      setCurrentPage(pageNumber);
-    }
-  };
-
-  // Handle page input
-  const handlePageInputChange = (e) => {
-    setPageInputValue(e.target.value);
-  };
-
-  const handlePageInputSubmit = (e) => {
-    e.preventDefault();
-    const pageNumber = parseInt(pageInputValue);
-    if (!isNaN(pageNumber) && pageNumber >= 1 && pageNumber <= totalPages) {
-      paginate(pageNumber);
-    }
-  };
 
   // Format date for display - shorter format for compactness
   const formatDate = (dateString) => {
@@ -223,7 +261,7 @@ const Home = ({
     visible: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.05, // Faster stagger for more items
+        staggerChildren: 0.05,
       },
     },
   };
@@ -243,7 +281,6 @@ const Home = ({
   // Get category counts
   const categoryCount = useMemo(() => {
     const counts = {};
-
     let sumOfAllCategories = 0;
 
     categoriesWithAll.forEach((category) => {
@@ -254,9 +291,7 @@ const Home = ({
       }
     });
 
-    // Now assign the sum to "All Categories"
     counts["All Categories"] = sumOfAllCategories;
-
     return counts;
   }, [totalItemsCat, categoriesWithAll]);
 
@@ -272,7 +307,7 @@ const Home = ({
           <motion.h1
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-xl md:text-2xl font-bold text-gray-800 dark:text-white"
+            className="text-xl font-bold text-gray-800 dark:text-gray-100"
           >
             Campus Marketplace
           </motion.h1>
@@ -363,34 +398,6 @@ const Home = ({
                     >
                       Price: High-Low
                     </button>
-                    <button
-                      onClick={() => {
-                        setSortType("sold");
-                        setIsFilterOpen(false);
-                      }}
-                      className={`w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition
-              ${
-                sortType === "sold"
-                  ? "bg-blue-600 text-white shadow-lg"
-                  : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-blue-900 hover:text-blue-700 dark:hover:text-blue-300"
-              }`}
-                    >
-                      Sold
-                    </button>
-                    <button
-                      onClick={() => {
-                        setSortType("unsold");
-                        setIsFilterOpen(false);
-                      }}
-                      className={`w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition
-              ${
-                sortType === "unsold"
-                  ? "bg-blue-600 text-white shadow-lg"
-                  : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-blue-50 dark:hover:bg-blue-900 hover:text-blue-700 dark:hover:text-blue-300"
-              }`}
-                    >
-                      Unsold
-                    </button>
                   </div>
                 </div>
               </motion.div>
@@ -436,10 +443,6 @@ const Home = ({
 
         {/* Sort and results info */}
         <div className="flex justify-between items-center mb-3">
-          <div className="text-xs text-gray-600 dark:text-gray-400 hidden md:block">
-            {loading ? "Loading..." : `${displayItems.length} items`}
-          </div>
-
           <div className="relative hidden md:block">
             <select
               value={sortType}
@@ -449,19 +452,15 @@ const Home = ({
               <option value="newest">Newest</option>
               <option value="priceAsc">Price: Low-High</option>
               <option value="priceDesc">Price: High-Low</option>
-              <option value="sold">Sold</option>
-              <option value="unsold">Unsold</option>
+              {/* <option value="sold">Sold</option>
+              <option value="unsold">Unsold</option> */}
             </select>
             <FaSort className="absolute left-2 top-2 text-gray-500 dark:text-gray-400 text-xs" />
           </div>
         </div>
 
-        {/* Loading state */}
-        {loading && (
-          <div className="flex justify-center items-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-          </div>
-        )}
+        {/* Initial Loading state with skeleton */}
+        {loading && items.length === 0 && <SkeletonGrid count={10} />}
 
         {/* Error state */}
         {error && (
@@ -469,7 +468,7 @@ const Home = ({
             <div className="text-5xl mb-2">⚠️</div>
             <p className="text-lg text-red-600 dark:text-red-400">{error}</p>
             <button
-              onClick={() => fetchItems()}
+              onClick={() => fetchItems(1, false)}
               className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
             >
               Retry
@@ -477,7 +476,7 @@ const Home = ({
           </div>
         )}
 
-        {/* Items grid - more compact layout with lazy loading images */}
+        {/* Items grid */}
         {!loading && !error && displayItems.length > 0 ? (
           <motion.div
             variants={containerVariants}
@@ -489,18 +488,31 @@ const Home = ({
               <motion.div
                 key={item.id}
                 variants={itemVariants}
-                whileHover={{ scale: 1.02 }}
+                whileHover={{ scale: item.is_sold ? 1 : 1.02 }}
                 transition={{ duration: 0.2 }}
-                className="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-700 flex flex-col"
-                onClick={() => navigate(`/item/${item.id}`)}
+                className={`bg-white dark:bg-gray-800 rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-700 flex flex-col relative ${
+                  item.is_sold
+                    ? "opacity-60 cursor-not-allowed"
+                    : "cursor-pointer"
+                }`}
+                onClick={() => !item.is_sold && navigate(`/item/${item.id}`)}
               >
                 <div className="relative aspect-[3/4] overflow-hidden bg-gray-100 dark:bg-gray-700">
                   <img
                     src={item.firstimage}
                     alt={item.title}
-                    className="w-full h-full object-cover"
+                    className={`w-full h-full object-cover ${
+                      item.is_sold ? "grayscale" : ""
+                    }`}
                     loading="lazy"
                   />
+                  {item.is_sold && (
+                    <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
+                      <div className="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-bold transform -rotate-12">
+                        SOLD
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <div className="p-2 flex-grow">
                   <h3 className="text-sm font-medium mb-1 text-gray-800 dark:text-white line-clamp-1">
@@ -530,11 +542,16 @@ const Home = ({
                 </div>
                 <div className="p-2 bg-gray-50 dark:bg-gray-700/50 border-t border-gray-200 dark:border-gray-700">
                   <motion.button
-                    whileTap={{ scale: 0.95 }}
-                    className="w-full py-2 bg-green-500 hover:bg-green-600 text-white rounded text-xs font-medium transition-colors flex items-center justify-center gap-1"
+                    whileTap={{ scale: item.is_sold ? 1 : 0.95 }}
+                    disabled={item.is_sold}
+                    className={`w-full py-2 rounded text-xs font-medium transition-colors flex items-center justify-center gap-1 ${
+                      item.is_sold
+                        ? "bg-gray-400 text-gray-600 cursor-not-allowed"
+                        : "bg-green-500 hover:bg-green-600 text-white"
+                    }`}
                   >
-                    <FaWhatsapp size={16}></FaWhatsapp>
-                    Contact
+                    <FaWhatsapp size={16} />
+                    {item.is_sold ? "Sold" : "Contact"}
                   </motion.button>
                 </div>
               </motion.div>
@@ -552,87 +569,17 @@ const Home = ({
           </div>
         ) : null}
 
-        {/* Enhanced Pagination with page input */}
-        {!loading && !error && totalPages > 1 && (
-          <div className="flex justify-center mt-4 mb-24 lg:mb-2">
-            <nav className="flex items-center space-x-1">
-              <button
-                onClick={() => paginate(Math.max(1, currentPage - 1))}
-                disabled={currentPage === 1}
-                className="p-1 rounded-md bg-gray-200 dark:bg-gray-700 dark:text-white disabled:opacity-50 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-              >
-                <FiChevronLeft size={24} />
-              </button>
+        {/* Load More Skeleton */}
+        {loadingMore && (
+          <div className="mt-6">
+            <SkeletonGrid count={6} />
+          </div>
+        )}
 
-              <div className="flex items-center gap-1">
-                {[...Array(totalPages).keys()].map((number) => {
-                  // Show limited page numbers
-                  if (
-                    number + 1 === 1 ||
-                    number + 1 === totalPages ||
-                    (number + 1 >= currentPage - 1 &&
-                      number + 1 <= currentPage + 1)
-                  ) {
-                    return (
-                      <button
-                        key={number + 1}
-                        onClick={() => paginate(number + 1)}
-                        className={`w-8 h-8 flex items-center justify-center rounded-md text-lg ${
-                          currentPage === number + 1
-                            ? "bg-blue-500 text-white"
-                            : "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600"
-                        } transition-colors`}
-                      >
-                        {number + 1}
-                      </button>
-                    );
-                  } else if (
-                    (number + 1 === currentPage - 2 && currentPage > 3) ||
-                    (number + 1 === currentPage + 2 &&
-                      currentPage < totalPages - 2)
-                  ) {
-                    return (
-                      <span
-                        key={`ellipsis-${number}`}
-                        className="text-xs dark:text-gray-200"
-                      >
-                        ...
-                      </span>
-                    );
-                  }
-                  return null;
-                })}
-              </div>
-
-              {/* Page input field */}
-              <form
-                onSubmit={handlePageInputSubmit}
-                className="flex items-center ml-1"
-              >
-                <input
-                  type="text"
-                  value={pageInputValue}
-                  onChange={handlePageInputChange}
-                  placeholder={`1-${totalPages}`}
-                  className="w-12 h-8 px-1 text-center text-sm bg-white dark:bg-gray-800 dark:text-gray-200  border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  aria-label="Go to page"
-                />
-                <button
-                  type="submit"
-                  className="ml-1 px-2 h-8 bg-blue-500 text-white text-xs rounded-md hover:bg-blue-600 transition-colors"
-                >
-                  Go
-                </button>
-              </form>
-
-              <button
-                onClick={() => paginate(Math.min(totalPages, currentPage + 1))}
-                disabled={currentPage === totalPages}
-                className="p-1 rounded-md bg-gray-200 dark:bg-gray-700 dark:text-white disabled:opacity-50 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-              >
-                <FiChevronRight size={24} />
-              </button>
-            </nav>
+        {/* End of results message */}
+        {!loading && !loadingMore && !hasMore && displayItems.length > 0 && (
+          <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+            <p>You've reached the end of the results</p>
           </div>
         )}
       </div>

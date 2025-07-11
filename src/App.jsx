@@ -1,21 +1,25 @@
-import { useEffect, useState, useCallback } from "react";
+import React, { lazy, Suspense, useEffect, useState, useCallback } from "react";
 import { Route, Routes, Navigate, useNavigate } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import axios from "axios";
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "./App.css";
 
 // Components
 import Navbar from "./components/Navbar";
-import Home from "./components/Home";
+// import Home from "./components/Home";
 import Footer from "./components/Footer";
-import Item from "./components/Items";
+// import Item from "./components/Items";
 import AddItem from "./components/AddItem";
 import Feedback from "./components/Feedback";
 import AboutPage from "./components/AboutUs";
-import MyListings from "./components/MyListing";
+// import MyListings from "./components/MyListing";
 import Login from "./components/Login";
 
+const Home = lazy(() => import("./components/Home"));
+const Item = lazy(() => import("./components/Items"));
+const MyListings = lazy(() => import("./components/MyListing"));
 export const ProtectedRoute = ({ children, user }) => {
   if (!user) {
     return <Navigate to="/login" replace />;
@@ -71,64 +75,86 @@ function App() {
     const decodedCookie = decodeURIComponent(document.cookie);
     const cookies = decodedCookie.split(";");
 
+    const tokens = [];
+
     for (let i = 0; i < cookies.length; i++) {
       let c = cookies[i].trim();
       if (c.indexOf(name) === 0) {
-        return c.substring(name.length, c.length);
+        tokens.push(c.substring(name.length, c.length));
       }
     }
-    return null;
+
+    return tokens;
   };
 
   const handleLogin = async (userData) => {
     try {
+      // Initial GET request to possibly set CSRF cookie
       await axios.get(`${import.meta.env.VITE_API_URL}/authreceiver`, {
-        withCredentials: true, // required to accept cookie from server
+        withCredentials: true,
       });
     } catch (error) {
-      console.error("Error during authentication:", error);
+      console.error("Error during initial auth check:", error);
     }
 
-    const csrfToken = getCSRFTokenFromCookies();
+    const csrfTokens = getCSRFTokenFromCookies();
 
-    try {
-      const response = await axios.post(
-        `${import.meta.env.VITE_API_URL}/authreceiver/`,
-        {
-          email: userData.email,
-          name: userData.name,
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-            "X-CSRFToken": csrfToken,
+    if (!csrfTokens || csrfTokens.length === 0) {
+      return toast.error("No CSRF Token found");
+    }
+
+    let success = false;
+
+    // Try each CSRF token until one works
+    for (const csrfToken of csrfTokens) {
+      try {
+        const response = await axios.post(
+          `${import.meta.env.VITE_API_URL}/authreceiver/`,
+          {
+            email: userData.email,
+            name: userData.name,
           },
-          withCredentials: true,
-        }
-      );
+          {
+            headers: {
+              "Content-Type": "application/json",
+              "X-CSRFToken": csrfToken,
+            },
+            withCredentials: true,
+          }
+        );
 
-      const userDataWithCampus = {
-        ...userData,
-        campus: response.data.campus, // Use campus from response or default
-      };
+        const userDataWithCampus = {
+          ...userData,
+          campus: response.data.campus || "default-campus", // Adjust default as needed
+        };
 
-      setUser(userDataWithCampus);
-      localStorage.setItem("user", JSON.stringify(userDataWithCampus));
-      console.log("Auth receiver response:", response.data);
-    } catch (err) {
-      console.error("Error fetching auth receiver:", err);
+        setUser(userDataWithCampus);
+        localStorage.setItem("user", JSON.stringify(userDataWithCampus));
+
+        success = true;
+        break; // Exit loop after successful login
+      } catch (err) {
+        console.warn("Failed with token:", csrfToken, err.message);
+        continue; // Try next token
+      }
     }
 
+    if (!success) {
+      toast.error("All CSRF tokens failed. Please try logging in again.");
+      return;
+    }
+
+    // Optional final GET request
     try {
       await axios.get(`${import.meta.env.VITE_API_URL}/authreceiver`, {
-        withCredentials: true, // required to accept cookie from server
+        withCredentials: true,
       });
     } catch (error) {
-      console.error("Error during authentication:", error);
+      console.error("Final auth check failed:", error);
+      toast.error("Authentication check failed after login.");
     }
 
     navigate("/");
-    toast.success(`Welcome ${userData.name}! 🎉`);
   };
 
   const handleLogout = () => {
@@ -187,14 +213,20 @@ function App() {
                   <Route
                     path="/"
                     element={
-                      <Home
-                        searchVal={searchVal}
-                        selectedCategory={selectedCategory}
-                        setSelectedCategory={setSelectedCategory}
-                        selectedCampus={selectedCampus}
-                        categories={categories}
-                        setCategories={setCategories}
-                      />
+                      <Suspense
+                        fallback={
+                          <div className="text-center p-4">Loading Home...</div>
+                        }
+                      >
+                        <Home
+                          searchVal={searchVal}
+                          selectedCategory={selectedCategory}
+                          setSelectedCategory={setSelectedCategory}
+                          selectedCampus={selectedCampus}
+                          categories={categories}
+                          setCategories={setCategories}
+                        />
+                      </Suspense>
                     }
                   />
 
@@ -222,9 +254,30 @@ function App() {
                   <Route path="/aboutus" element={<AboutPage />} />
                   <Route
                     path="/mylistings"
-                    element={<MyListings user={user} categories={categories} />}
+                    element={
+                      <Suspense
+                        fallback={
+                          <div className="text-center p-4">
+                            Loading My Listings...
+                          </div>
+                        }
+                      >
+                        <MyListings user={user} categories={categories} />
+                      </Suspense>
+                    }
                   />
-                  <Route path="/item/:id" element={<Item />} />
+                  <Route
+                    path="/item/:id"
+                    element={
+                      <Suspense
+                        fallback={
+                          <div className="text-center p-4">Loading Item...</div>
+                        }
+                      >
+                        <Item />
+                      </Suspense>
+                    }
+                  />
                   {/* Catch all route for protected area */}
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>

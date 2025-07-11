@@ -10,6 +10,8 @@ import {
   FiEdit2,
   FiTrash2,
   FiRotateCcw,
+  FiImage,
+  FiArrowLeft,
 } from "react-icons/fi";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -150,7 +152,6 @@ const MyListings = () => {
       toast.success(`${idsArray.length} item(s) ${actionName} successfully`);
 
       // Clear selection after bulk operations
-
       setSelectedItems(new Set());
       setIsSelecting(false);
     } catch (err) {
@@ -253,17 +254,102 @@ const MyListings = () => {
     return operationLoading[itemId] === operation;
   };
 
+  // Skeleton Loading Component
+  const SkeletonLoader = () => (
+    <div
+      className="overflow-auto bg-gray-50 dark:bg-gray-900 transition-colors duration-200"
+      style={{ height: "calc(100dvh - 56px)" }}
+    >
+      <div className="max-w-7xl mx-auto p-6">
+        {/* Header Skeleton */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="mb-8"
+        >
+          {/* Title and Description Skeleton */}
+          <div className="mb-2">
+            <div className="h-9 bg-gray-300 dark:bg-gray-600 rounded animate-pulse w-48 mb-2"></div>
+            <div className="h-5 bg-gray-300 dark:bg-gray-600 rounded animate-pulse w-80"></div>
+          </div>
+
+          {/* Stats and Controls Skeleton */}
+          <div className="mt-4 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+            {/* Stats Box Skeleton */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-700">
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 bg-gray-400 dark:bg-gray-500 rounded animate-pulse"></div>
+                <div className="h-5 bg-gray-300 dark:bg-gray-600 rounded animate-pulse w-28"></div>
+              </div>
+            </div>
+
+            {/* Select Button Skeleton */}
+            <div className="h-10 bg-blue-200 dark:bg-blue-800 rounded-lg animate-pulse w-28"></div>
+          </div>
+        </motion.div>
+
+        {/* Items Grid Skeleton */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5 }}
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-18 lg:mb-0"
+        >
+          {[1, 2, 3, 4, 5, 6, 7, 8].map((index) => (
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden border border-gray-200 dark:border-gray-700"
+            >
+              {/* Image Skeleton */}
+              <div className="relative h-48 bg-gray-200 dark:bg-gray-700 animate-pulse flex items-center justify-center">
+                <FiImage
+                  size={48}
+                  className="text-gray-400 dark:text-gray-500"
+                />
+              </div>
+
+              {/* Content Skeleton */}
+              <div className="p-5">
+                {/* Title and Price Skeleton */}
+                <div className="mb-4">
+                  <div className="h-6 bg-gray-300 dark:bg-gray-600 rounded animate-pulse mb-2"></div>
+                  <div className="h-6 bg-gray-300 dark:bg-gray-600 rounded animate-pulse w-3/4 mb-2"></div>
+                  <div className="h-8 bg-blue-200 dark:bg-blue-800 rounded animate-pulse w-24"></div>
+                </div>
+
+                {/* Date and Phone Skeleton */}
+                <div className="space-y-3 mb-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 bg-gray-400 dark:bg-gray-500 rounded animate-pulse"></div>
+                    <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded animate-pulse w-32"></div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 bg-gray-400 dark:bg-gray-500 rounded animate-pulse"></div>
+                    <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded animate-pulse w-28"></div>
+                  </div>
+                </div>
+
+                {/* Action Buttons Skeleton */}
+                <div className="flex flex-wrap gap-2 pt-3 border-t border-gray-200 dark:border-gray-700">
+                  <div className="flex-1 h-9 bg-blue-200 dark:bg-blue-800 rounded-lg animate-pulse"></div>
+                  <div className="flex-1 h-9 bg-red-200 dark:bg-red-800 rounded-lg animate-pulse"></div>
+                  <div className="flex-1 h-9 bg-green-200 dark:bg-green-800 rounded-lg animate-pulse"></div>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </motion.div>
+      </div>
+    </div>
+  );
+
   // Loading state
   if (loading) {
-    return (
-      <div className="min-h-[100dvh] bg-gray-50 dark:bg-gray-900 p-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-          </div>
-        </div>
-      </div>
-    );
+    return <SkeletonLoader />;
   }
 
   // Error state
@@ -296,6 +382,17 @@ const MyListings = () => {
     >
       <div className="max-w-7xl mx-auto p-6">
         {/* Header */}
+        <motion.button
+          onClick={() => navigate(-1)}
+          className="mb-6 flex items-center text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors duration-200"
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.4 }}
+          whileHover={{ x: -5 }}
+        >
+          <FiArrowLeft className="w-5 h-5 mr-2" />
+          Back
+        </motion.button>
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -430,7 +527,7 @@ const MyListings = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
                 className={`bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 hover:scale-105 cursor-pointer relative ${
-                  item.issold ? "opacity-80 grayscale" : ""
+                  item.issold ? "opacity-80" : ""
                 } ${selectedItems.has(item.id) ? "ring-2 ring-blue-500" : ""}`}
                 onClick={(e) => handleItemClick(item.id, e)}
               >
@@ -448,24 +545,26 @@ const MyListings = () => {
                   </div>
                 )}
 
-                {/* Item Image */}
-                <div className="relative h-48 overflow-hidden">
-                  <img
-                    src={item.firstimage}
-                    alt={item.title}
-                    className="w-full h-full object-cover"
-                  />
-                  {/* Sold Badge */}
-                  {item.issold && (
-                    <span className="absolute top-2 left-2 bg-green-600 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 shadow-lg">
-                      <FiCheckCircle /> Sold
-                    </span>
+                {/* Image OR SOLD placeholder */}
+                <div className="relative h-48 overflow-hidden bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                  {item.issold ? (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="bg-red-500 text-white px-4 py-2 rounded-full text-sm font-bold transform -rotate-12 shadow-md">
+                        SOLD
+                      </div>
+                    </div>
+                  ) : (
+                    <img
+                      src={item.firstimage}
+                      alt={item.title}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
                   )}
                 </div>
 
                 {/* Item Details */}
                 <div className="p-5">
-                  {/* Item Name and Price */}
                   <div className="mb-4">
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2">
                       {item.title}
@@ -474,20 +573,21 @@ const MyListings = () => {
                       {formatPrice(item.price)}
                     </div>
                   </div>
-                  {/* Date Added */}
+
                   <div className="flex items-center gap-2 mb-3">
                     <FiCalendar className="text-gray-500 dark:text-gray-400 text-sm" />
                     <span className="text-sm text-gray-600 dark:text-gray-300">
                       Listed on {formatDate(item.date)}
                     </span>
                   </div>
-                  {/* Contact Number */}
+
                   <div className="flex items-center gap-2 mb-4">
                     <FiPhone className="text-gray-500 dark:text-gray-400 text-sm" />
                     <span className="text-sm text-gray-600 dark:text-gray-300 font-mono">
                       {extractPhoneNumber(item.contact)}
                     </span>
                   </div>
+
                   {/* Action Buttons */}
                   <div className="flex flex-wrap gap-2 pt-3 border-t border-gray-200 dark:border-gray-700">
                     <button
@@ -497,6 +597,7 @@ const MyListings = () => {
                     >
                       <FiEdit2 /> Edit
                     </button>
+
                     <button
                       className={`flex-1 flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white py-2 px-3 rounded-lg transition-colors duration-200 text-sm font-semibold shadow-md ${
                         isOperationLoading(item.id, "DELETE")
@@ -512,9 +613,10 @@ const MyListings = () => {
                         ? "Deleting..."
                         : "Delete"}
                     </button>
+
                     {item.issold ? (
                       <button
-                        className={`flex-1 flex items-center justify-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-white py-2 px-3 rounded-lg transition-colors duration-200 text-sm font-semibold shadow-md ${
+                        className={`flex-1 whitespace-nowrap flex items-center justify-center gap-2 bg-yellow-500 hover:bg-yellow-600 text-white py-2 px-3 rounded-lg transition-colors duration-200 text-sm font-semibold shadow-md ${
                           isOperationLoading(item.id, "MARK UNSOLD")
                             ? "opacity-60 cursor-not-allowed"
                             : ""
@@ -530,7 +632,7 @@ const MyListings = () => {
                       </button>
                     ) : (
                       <button
-                        className={`flex-1 flex items-center whitespace-nowrap justify-center gap-2 bg-green-600 hover:bg-green-700 text-white py-2 px-3 rounded-lg transition-colors duration-200 text-sm font-semibold shadow-md ${
+                        className={`flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white py-2 px-3 rounded-lg transition-colors duration-200 text-sm font-semibold shadow-md ${
                           isOperationLoading(item.id, "MARK SOLD")
                             ? "opacity-60 cursor-not-allowed"
                             : ""

@@ -8,6 +8,7 @@ import {
   FiMessageSquare,
   FiCheck,
   FiAlertCircle,
+  FiArrowLeft,
 } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -72,7 +73,6 @@ const Feedback = () => {
 
     try {
       const csrfToken = getCSRFTokenFromCookies();
-      console.log("CSRF Token retrieved:", csrfToken);
 
       if (!csrfToken) {
         throw new Error("CSRF token not found in cookies.");
@@ -196,7 +196,7 @@ const Feedback = () => {
 
   return (
     <div
-      className="dark:bg-gray-900 bg-gray-50 py-12 px-6 overflow-auto"
+      className="dark:bg-gray-900 bg-gray-50 py-6 px-6 overflow-auto"
       style={{ height: "calc(100dvh - 56px)" }}
     >
       <motion.div
@@ -205,6 +205,17 @@ const Feedback = () => {
         animate="visible"
         className="max-w-2xl mx-auto"
       >
+        <motion.button
+          onClick={() => navigate(-1)}
+          className="mb-6 flex items-center text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors duration-200"
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.4 }}
+          whileHover={{ x: -5 }}
+        >
+          <FiArrowLeft className="w-5 h-5 mr-2" />
+          Back
+        </motion.button>
         <motion.div variants={itemVariants} className="text-center mb-8">
           <h1 className="text-4xl font-bold dark:text-white mb-2">
             Share Your Feedback

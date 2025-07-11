@@ -8,6 +8,7 @@ import {
   FaLightbulb,
   FaRocket,
 } from "react-icons/fa";
+import { FiArrowLeft } from "react-icons/fi";
 
 const AboutPage = () => {
   const containerVariants = {

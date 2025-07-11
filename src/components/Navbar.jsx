@@ -16,7 +16,7 @@ import {
 import { IoMdClose } from "react-icons/io";
 import { IoIosArrowDown } from "react-icons/io";
 import { IoAdd } from "react-icons/io5";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 function Navbar({
   darktheme,
@@ -33,6 +33,7 @@ function Navbar({
   const [showCampuses, setShowCampuses] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const searchInputRef = useRef(null);
   const dropdownRef = useRef(null);
   const campusDropdownRef = useRef(null);
@@ -127,6 +128,26 @@ function Navbar({
     setShowCampuses(false);
   };
 
+  // Handle search input key press
+  const handleSearchKeyPress = (e) => {
+    if (e.key === "Enter" && searchVal.trim()) {
+      // Close search and reset value if not on home page
+      if (location.pathname !== "/") {
+        setShowSearch(false);
+        setSearchVal("");
+      } else {
+        // Just close search on home page without resetting value
+        setShowSearch(false);
+      }
+    }
+  };
+
+  // Handle dropdown menu item clicks
+  const handleDropdownItemClick = (action) => {
+    setShowDropdown(false); // Close dropdown first
+    action(); // Then execute the action
+  };
+
   return (
     <motion.div
       className={`w-full sticky shadow-lg top-0 z-50 ${
@@ -172,6 +193,7 @@ function Navbar({
                   ref={searchInputRef}
                   value={searchVal}
                   onChange={(e) => setSearchVal(e.target.value)}
+                  onKeyPress={handleSearchKeyPress}
                   type="text"
                   className="flex-1 outline-0 border-0 bg-gray-50 dark:bg-gray-700 dark:text-white px-3 py-1"
                   placeholder="Search for items, categories, etc..."
@@ -201,6 +223,7 @@ function Navbar({
             <input
               value={searchVal}
               onChange={(e) => setSearchVal(e.target.value)}
+              onKeyPress={handleSearchKeyPress}
               type="text"
               className="outline-0 border-0 bg-gray-50 dark:bg-gray-700 dark:text-white px-3 py-2 transition-colors duration-300 md:w-64 lg:w-44 xl:w-70 2xl:w-84"
               placeholder="Search for items..."
@@ -294,7 +317,7 @@ function Navbar({
 
           {/* Sell Item Button */}
           <motion.div
-            className="hidden lg:flex items-center cursor-pointer text-white bg-purple-500 hover:bg-600  px-4 py-2 rounded-full shadow-md"
+            className="hidden lg:flex items-center cursor-pointer text-white bg-blue-500 hover:bg-600  px-4 py-2 rounded-full shadow-md"
             onClick={() => navigate("/add")}
             whileHover={{
               scale: 1.05,
@@ -322,7 +345,7 @@ function Navbar({
                   exit={{ rotate: 90, opacity: 0 }}
                   transition={{ duration: 0.15 }}
                 >
-                  <FaSun className="text-yellow-400 text-xl" size={22} />
+                  <FaSun className="text-yellow-400 text-xl" size={16} />
                 </motion.div>
               ) : (
                 <motion.div
@@ -332,7 +355,7 @@ function Navbar({
                   exit={{ rotate: -90, opacity: 0 }}
                   transition={{ duration: 0.15 }}
                 >
-                  <FaMoon className="text-gray-700 text-xl" size={22} />
+                  <FaMoon className="text-gray-700 text-xl" size={16} />
                 </motion.div>
               )}
             </AnimatePresence>
@@ -371,7 +394,9 @@ function Navbar({
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.1 }}
-                      onClick={() => navigate("/mylistings")}
+                      onClick={() =>
+                        handleDropdownItemClick(() => navigate("/mylistings"))
+                      }
                     >
                       <FaList className="mr-3 text-blue-500 dark:text-blue-400" />
                       <span className="dark:text-white">My Listings</span>
@@ -381,7 +406,9 @@ function Navbar({
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.15 }}
-                      onClick={() => navigate("/feedback")}
+                      onClick={() =>
+                        handleDropdownItemClick(() => navigate("/feedback"))
+                      }
                     >
                       <FaComments className="mr-3 text-green-500 dark:text-green-400" />
                       <span className="dark:text-white">Feedback</span>
@@ -391,7 +418,9 @@ function Navbar({
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.2 }}
-                      onClick={() => navigate("/aboutus")}
+                      onClick={() =>
+                        handleDropdownItemClick(() => navigate("/aboutus"))
+                      }
                     >
                       <FaInfoCircle className="mr-3 text-purple-500 dark:text-purple-400" />
                       <span className="dark:text-white">About Us</span>
@@ -401,7 +430,7 @@ function Navbar({
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.25 }}
-                      onClick={onLogout}
+                      onClick={() => handleDropdownItemClick(onLogout)}
                     >
                       <FaSignOutAlt className="mr-3" />
                       <span>Logout</span>

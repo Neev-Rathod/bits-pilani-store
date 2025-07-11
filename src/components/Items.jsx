@@ -106,21 +106,148 @@ function Item() {
     },
   };
 
-  if (loading) {
-    return (
-      <motion.div
-        className="flex justify-center items-center min-h-screen"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-      >
+  // Skeleton Loading Component
+  const SkeletonLoader = () => (
+    <div
+      className="bg-gray-50 dark:bg-gray-900 overflow-auto"
+      style={{ height: "calc(100dvh - 56px)" }}
+    >
+      <div className="container mx-auto px-4 py-6 max-w-6xl">
+        {/* Back Button Skeleton */}
         <motion.div
-          className="rounded-full h-12 w-12 border-b-2 border-blue-600"
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-        />
-      </motion.div>
-    );
+          className="mb-6 flex items-center"
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.4 }}
+        >
+          <div className="h-6 w-16 bg-gray-300 dark:bg-gray-600 rounded animate-pulse"></div>
+        </motion.div>
+
+        {/* Main Content Skeleton */}
+        <motion.div
+          className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden mb-8"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          <div className="flex flex-col lg:flex-row">
+            {/* Image Section Skeleton */}
+            <div className="lg:w-2/5 flex-shrink-0">
+              <div className="relative h-80 sm:h-96 lg:h-full min-h-[400px] bg-gray-200 dark:bg-gray-700 animate-pulse">
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="bg-gray-300 dark:bg-gray-600 rounded-full p-6">
+                    <FiImage
+                      size={48}
+                      className="text-gray-400 dark:text-gray-500"
+                    />
+                  </div>
+                </div>
+                {/* Image indicators skeleton */}
+                <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex space-x-3 bg-black/20 backdrop-blur-md rounded-full px-4 py-2">
+                  {[1, 2, 3].map((_, index) => (
+                    <div
+                      key={index}
+                      className="w-3 h-3 rounded-full bg-white/50"
+                    />
+                  ))}
+                </div>
+                {/* Image counter skeleton */}
+                <div className="absolute top-6 right-6 bg-black/20 backdrop-blur-md text-white px-4 py-2 rounded-full">
+                  <div className="h-4 w-12 bg-white/50 rounded"></div>
+                </div>
+              </div>
+            </div>
+
+            {/* Details Section Skeleton */}
+            <div className="lg:w-3/5 p-6 sm:p-8 flex flex-col">
+              {/* Header Info Skeleton */}
+              <div className="mb-6">
+                {/* Title Skeleton */}
+                <div className="h-8 sm:h-10 bg-gray-300 dark:bg-gray-600 rounded mb-3 animate-pulse w-3/4"></div>
+
+                {/* Category Badge Skeleton */}
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="h-6 w-24 bg-blue-200 dark:bg-blue-800 rounded-full animate-pulse"></div>
+                </div>
+
+                {/* Price Skeleton */}
+                <div className="h-10 sm:h-12 bg-green-200 dark:bg-green-800 rounded mb-6 animate-pulse w-48"></div>
+              </div>
+
+              {/* Description Section Skeleton */}
+              <div className="mb-6">
+                <div className="h-6 bg-gray-300 dark:bg-gray-600 rounded mb-3 animate-pulse w-32"></div>
+                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                  <div className="space-y-2">
+                    <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded animate-pulse"></div>
+                    <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded animate-pulse w-5/6"></div>
+                    <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded animate-pulse w-4/6"></div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Seller Information Skeleton */}
+              <div className="mb-6 bg-gray-50 dark:bg-gray-700 rounded-lg p-5">
+                <div className="h-6 bg-gray-300 dark:bg-gray-600 rounded mb-4 animate-pulse w-40"></div>
+                <div className="space-y-3">
+                  {/* Seller Info Items */}
+                  {[1, 2, 3, 4].map((_, index) => (
+                    <div key={index} className="flex items-center">
+                      <div className="w-5 h-5 bg-gray-400 dark:bg-gray-500 rounded mr-3 flex-shrink-0 animate-pulse"></div>
+                      <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded animate-pulse w-32"></div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Contact Button Skeleton */}
+              <div className="space-y-3 mt-auto">
+                <div className="w-full h-12 bg-green-200 dark:bg-green-800 rounded-lg animate-pulse"></div>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Similar Items Section Skeleton */}
+        <motion.div
+          className="mb-8"
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+        >
+          {/* Section Title Skeleton */}
+          <div className="h-8 bg-gray-300 dark:bg-gray-600 rounded mb-6 animate-pulse w-48"></div>
+
+          {/* Similar Items Grid Skeleton */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            {[1, 2, 3, 4, 5, 6].map((_, index) => (
+              <div
+                key={index}
+                className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden"
+              >
+                {/* Image Skeleton */}
+                <div className="aspect-square bg-gray-200 dark:bg-gray-700 animate-pulse flex items-center justify-center">
+                  <FiImage
+                    size={24}
+                    className="text-gray-400 dark:text-gray-500"
+                  />
+                </div>
+                {/* Content Skeleton */}
+                <div className="p-3 space-y-2">
+                  <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded animate-pulse"></div>
+                  <div className="h-4 bg-green-200 dark:bg-green-800 rounded animate-pulse w-16"></div>
+                  <div className="h-3 bg-gray-300 dark:bg-gray-600 rounded animate-pulse w-20"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      </div>
+    </div>
+  );
+
+  if (loading) {
+    return <SkeletonLoader />;
   }
 
   if (error) {

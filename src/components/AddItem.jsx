@@ -4,7 +4,9 @@ import { toast } from "react-toastify";
 import { useNavigate, useParams } from "react-router-dom";
 import { FaUpload } from "react-icons/fa";
 import { RxCross1 } from "react-icons/rx";
+import { FiArrowLeft } from "react-icons/fi";
 import axios from "axios";
+import TermsModal from "./TermsAndCondition";
 
 const VITE_API_URL = import.meta.env.VITE_API_URL;
 
@@ -79,7 +81,6 @@ const AddItem = ({ user, categories, setCategories }) => {
         const res = await axios.get(`${VITE_API_URL}/misc?id=1`, {
           withCredentials: true,
         });
-        console.log(res.data);
         if (res.data) {
           setFormData((prev) => ({
             ...prev,
@@ -134,8 +135,6 @@ const AddItem = ({ user, categories, setCategories }) => {
       setFormErrors((prev) => ({ ...prev, [name]: null }));
     }
   };
-
-  console.log(formData);
 
   const handleImageChange = (e) => {
     const files = Array.from(e.target.files);
@@ -237,8 +236,6 @@ const AddItem = ({ user, categories, setCategories }) => {
       (cat) => cat.name == formData.category
     ).id;
 
-    console.log(categoryId);
-
     const formDataToSend = new FormData();
     formDataToSend.append("itemName", formData.productName);
     formDataToSend.append("description", formData.description);
@@ -275,7 +272,6 @@ const AddItem = ({ user, categories, setCategories }) => {
       toast.success(
         id ? "Item updated successfully!" : "Product listed successfully!"
       );
-      console.log(res);
 
       navigate("/mylistings");
     } catch (err) {
@@ -301,6 +297,17 @@ const AddItem = ({ user, categories, setCategories }) => {
       className="py-8 px-4 sm:px-6 lg:px-8 w-[100vw] dark:bg-gray-900 overflow-auto"
       style={{ height: "calc(100dvh - 56px)" }}
     >
+      <motion.button
+        onClick={() => navigate(-1)}
+        className="mb-6 flex items-center text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors duration-200"
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.4 }}
+        whileHover={{ x: -5 }}
+      >
+        <FiArrowLeft className="w-5 h-5 mr-2" />
+        Back
+      </motion.button>
       <motion.div
         initial="hidden"
         animate="visible"
@@ -599,37 +606,7 @@ const AddItem = ({ user, categories, setCategories }) => {
       </motion.div>
       {/* Terms Modal */}
       {isTermsOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-60 p-4">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-lg w-full max-h-[80dvh] overflow-y-auto px-4"
-          >
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                  Terms and Conditions
-                </h3>
-                <button
-                  onClick={toggleTermsModal}
-                  className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
-                >
-                  <RxCross1 size={20} />
-                </button>
-              </div>
-              {/* ...terms content here... */}
-              <div className="mt-6 flex justify-end">
-                <button
-                  onClick={toggleTermsModal}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  I Understand
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        </div>
+        <TermsModal isOpen={isTermsOpen} setIsOpen={setIsTermsOpen} />
       )}
     </div>
   );
