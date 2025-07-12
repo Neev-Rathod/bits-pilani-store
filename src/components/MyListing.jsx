@@ -258,7 +258,7 @@ const MyListings = () => {
   const SkeletonLoader = () => (
     <div
       className="overflow-auto bg-gray-50 dark:bg-gray-900 transition-colors duration-200"
-      style={{ height: "calc(100dvh - 56px)" }}
+      style={{ height: "calc(var(--app-height) - 56px)" }}
     >
       <div className="max-w-7xl mx-auto p-6">
         {/* Header Skeleton */}
@@ -355,7 +355,10 @@ const MyListings = () => {
   // Error state
   if (error) {
     return (
-      <div className="min-h-[100dvh] bg-gray-50 dark:bg-gray-900 p-6">
+      <div
+        className=" bg-gray-50 dark:bg-gray-900 p-6"
+        style={{ height: "calc(var(--app-height))" }}
+      >
         <div className="max-w-7xl mx-auto">
           <div className="text-center py-12">
             <div className="text-red-500 dark:text-red-400 text-lg font-medium">
@@ -378,7 +381,7 @@ const MyListings = () => {
   return (
     <div
       className="overflow-auto bg-gray-50 dark:bg-gray-900 transition-colors duration-200"
-      style={{ height: "calc(100dvh - 56px)" }}
+      style={{ height: "calc(var(--app-height) - 56px)" }}
     >
       <div className="max-w-7xl mx-auto p-6">
         {/* Header */}
@@ -632,7 +635,7 @@ const MyListings = () => {
                       </button>
                     ) : (
                       <button
-                        className={`flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white py-2 px-3 rounded-lg transition-colors duration-200 text-sm font-semibold shadow-md ${
+                        className={`flex-1 whitespace-nowrap flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white py-2 px-3 rounded-lg transition-colors duration-200 text-sm font-semibold shadow-md ${
                           isOperationLoading(item.id, "MARK SOLD")
                             ? "opacity-60 cursor-not-allowed"
                             : ""

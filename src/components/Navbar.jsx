@@ -162,7 +162,7 @@ function Navbar({
           className="text-xl sm:text-2xl lg:text-3xl font-bold cursor-pointer"
           onClick={() => {
             navigate("/");
-            location.reload();
+            window.location.reload();
           }}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}

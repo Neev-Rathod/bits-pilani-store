@@ -56,7 +56,7 @@ const AboutPage = () => {
   return (
     <div
       className="overflow-auto bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white"
-      style={{ height: "calc(100dvh - 56px)" }}
+      style={{ height: "calc(var(--app-height) - 56px)" }}
     >
       <motion.div
         variants={containerVariants}

@@ -8,18 +8,18 @@ import "./App.css";
 
 // Components
 import Navbar from "./components/Navbar";
-// import Home from "./components/Home";
+import Home from "./components/Home";
 import Footer from "./components/Footer";
-// import Item from "./components/Items";
+import Item from "./components/Items";
 import AddItem from "./components/AddItem";
 import Feedback from "./components/Feedback";
 import AboutPage from "./components/AboutUs";
-// import MyListings from "./components/MyListing";
+import MyListings from "./components/MyListing";
 import Login from "./components/Login";
 
-const Home = lazy(() => import("./components/Home"));
-const Item = lazy(() => import("./components/Items"));
-const MyListings = lazy(() => import("./components/MyListing"));
+// const Home = lazy(() => import("./components/Home"));
+// const Item = lazy(() => import("./components/Items"));
+// const MyListings = lazy(() => import("./components/MyListing"));
 export const ProtectedRoute = ({ children, user }) => {
   if (!user) {
     return <Navigate to="/login" replace />;
@@ -43,6 +43,17 @@ function App() {
   const navigate = useNavigate();
 
   // Initialize theme
+  const setAppHeight = () => {
+    const height = window.innerHeight;
+    document.documentElement.style.setProperty("--app-height", `${height}px`);
+  };
+
+  useEffect(() => {
+    setAppHeight();
+    window.addEventListener("resize", setAppHeight);
+    return () => window.removeEventListener("resize", setAppHeight);
+  }, []);
+
   useEffect(() => {
     const theme = localStorage.getItem("color-theme");
     if (theme) setDarkthemeState(theme);
@@ -182,7 +193,10 @@ function App() {
   }
 
   return (
-    <div className="flex flex-col justify-between h-dvh">
+    <div
+      className="flex flex-col justify-between "
+      style={{ height: "var(--app-height)" }}
+    >
       <Routes>
         {/* Public Route - Login */}
         <Route
@@ -197,7 +211,10 @@ function App() {
           path="/*"
           element={
             <ProtectedRoute user={user}>
-              <div className="flex flex-col justify-between h-dvh">
+              <div
+                className="flex flex-col justify-between "
+                style={{ height: "var(--app-height)" }}
+              >
                 <Navbar
                   darktheme={darktheme}
                   setDarktheme={setDarktheme}
@@ -213,20 +230,20 @@ function App() {
                   <Route
                     path="/"
                     element={
-                      <Suspense
-                        fallback={
-                          <div className="text-center p-4">Loading Home...</div>
-                        }
-                      >
-                        <Home
-                          searchVal={searchVal}
-                          selectedCategory={selectedCategory}
-                          setSelectedCategory={setSelectedCategory}
-                          selectedCampus={selectedCampus}
-                          categories={categories}
-                          setCategories={setCategories}
-                        />
-                      </Suspense>
+                      // <Suspense
+                      //   fallback={
+                      //     <div className="text-center p-4">Loading Home...</div>
+                      //   }
+                      // >
+                      <Home
+                        searchVal={searchVal}
+                        selectedCategory={selectedCategory}
+                        setSelectedCategory={setSelectedCategory}
+                        selectedCampus={selectedCampus}
+                        categories={categories}
+                        setCategories={setCategories}
+                      />
+                      // </Suspense>
                     }
                   />
 
@@ -255,27 +272,27 @@ function App() {
                   <Route
                     path="/mylistings"
                     element={
-                      <Suspense
-                        fallback={
-                          <div className="text-center p-4">
-                            Loading My Listings...
-                          </div>
-                        }
-                      >
-                        <MyListings user={user} categories={categories} />
-                      </Suspense>
+                      // <Suspense
+                      //   fallback={
+                      //     <div className="text-center p-4">
+                      //       Loading My Listings...
+                      //     </div>
+                      //   }
+                      // >
+                      <MyListings user={user} categories={categories} />
+                      // </Suspense>
                     }
                   />
                   <Route
                     path="/item/:id"
                     element={
-                      <Suspense
-                        fallback={
-                          <div className="text-center p-4">Loading Item...</div>
-                        }
-                      >
-                        <Item />
-                      </Suspense>
+                      // <Suspense
+                      //   fallback={
+                      //     <div className="text-center p-4">Loading Item...</div>
+                      //   }
+                      // >
+                      <Item />
+                      // </Suspense>
                     }
                   />
                   {/* Catch all route for protected area */}

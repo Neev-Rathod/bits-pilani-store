@@ -159,7 +159,7 @@ const Feedback = () => {
     return (
       <div
         className="dark:bg-gray-900 bg-gray-50 shadow-lg flex items-center justify-center p-6 overflow-auto"
-        style={{ height: "calc(100dvh - 56px)" }}
+        style={{ height: "calc(var(--app-height) - 56px)" }}
       >
         <motion.div
           initial={{ scale: 0.8, opacity: 0 }}
@@ -197,13 +197,13 @@ const Feedback = () => {
   return (
     <div
       className="dark:bg-gray-900 bg-gray-50 py-6 px-6 overflow-auto"
-      style={{ height: "calc(100dvh - 56px)" }}
+      style={{ height: "calc(var(--app-height) - 56px)" }}
     >
       <motion.div
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className="max-w-2xl mx-auto"
+        className="max-w-2xl mx-auto mb-16"
       >
         <motion.button
           onClick={() => navigate(-1)}

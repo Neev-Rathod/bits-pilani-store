@@ -17,6 +17,7 @@ import { FaQuestion } from "react-icons/fa6";
 import { BiHome, BiSolidCategory } from "react-icons/bi";
 import { FaSort } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 
 const categoryIcons = {
   "All Categories": <BiSolidCategory />,
@@ -78,7 +79,6 @@ const Home = ({
   setCategories,
 }) => {
   const [items, setItems] = useState([]);
-  const [totalItems, setTotalItems] = useState(0);
   const [totalItemsCat, setTotalItemsCat] = useState({});
   const [currentPage, setCurrentPage] = useState(1);
   const [sortType, setSortType] = useState("newest");
@@ -173,7 +173,6 @@ const Home = ({
             setItems(newItems);
           }
 
-          setTotalItems(response.data.total_items);
           setTotalItemsCat(response.data.total_items_cat || {});
 
           // Check if there are more items to load
@@ -182,10 +181,12 @@ const Home = ({
           );
           setHasMore(page < totalPages);
         } else {
-          setError("Failed to fetch items");
+          setError("Failed to fetch items from server");
+          toast.error(response.data.error || "gotcha");
         }
       } catch (err) {
-        setError(err.response?.data?.message || "Failed to fetch items");
+        setError(err.response?.data?.message || "Failed to fetch item");
+        toast.error("Failed to fetch items try logging in again");
       } finally {
         setLoading(false);
         setLoadingMore(false);
@@ -298,7 +299,7 @@ const Home = ({
   return (
     <div
       className="overflow-auto bg-gray-50 dark:bg-gray-900"
-      style={{ height: "calc(100dvh - 56px)" }}
+      style={{ height: "calc(var(--app-height) - 56px)" }}
       ref={mainContainerRef}
     >
       <div className="p-2 sm:p-4 ">

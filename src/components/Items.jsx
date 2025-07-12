@@ -110,7 +110,7 @@ function Item() {
   const SkeletonLoader = () => (
     <div
       className="bg-gray-50 dark:bg-gray-900 overflow-auto"
-      style={{ height: "calc(100dvh - 56px)" }}
+      style={{ height: "calc(var(--app-height) - 56px)" }}
     >
       <div className="container mx-auto px-4 py-6 max-w-6xl">
         {/* Back Button Skeleton */}
@@ -605,7 +605,7 @@ function Item() {
   return (
     <div
       className="bg-gray-50 dark:bg-gray-900 overflow-auto"
-      style={{ height: "calc(100dvh - 56px)" }}
+      style={{ height: "calc(var(--app-height) - 56px)" }}
     >
       <div className="container mx-auto px-4 py-6 max-w-6xl">
         {/* Back Button */}
@@ -773,7 +773,7 @@ function Item() {
         {/* Similar Items Section */}
         {similarItems.length > 0 && (
           <motion.div
-            className="mb-8"
+            className="mb-22"
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.3 }}

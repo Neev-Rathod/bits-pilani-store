@@ -295,7 +295,7 @@ const AddItem = ({ user, categories, setCategories }) => {
   return (
     <div
       className="py-8 px-4 sm:px-6 lg:px-8 w-[100vw] dark:bg-gray-900 overflow-auto"
-      style={{ height: "calc(100dvh - 56px)" }}
+      style={{ height: "calc(var(--app-height) - 56px)" }}
     >
       <motion.button
         onClick={() => navigate(-1)}
