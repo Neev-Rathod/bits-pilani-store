@@ -27,7 +27,7 @@ A **fully responsive frontend** for the BITS Pilani Store with support for **lig
 ### 1. Fork and Clone the Repository
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/bits-pilani-store.git
+git clone https://github.com/Neev-Rathod/bits-pilani-store.git
 cd bits-pilani-store
 ```
 
@@ -35,7 +35,7 @@ cd bits-pilani-store
 
 ```bash
 git init
-git remote add origin https://github.com/YOUR_USERNAME/bits-pilani-store.git
+git remote add origin https://github.com/Neev-Rathod/bits-pilani-store.git
 ```
 
 ### 3. Install Dependencies
