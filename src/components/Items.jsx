@@ -1,7 +1,7 @@
 // src/components/Item.jsx
-import React, { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import axios from "axios";
 import {
   FiArrowLeft,
@@ -10,10 +10,18 @@ import {
   FiMapPin,
   FiCalendar,
   FiImage,
-  FiChevronLeft,
-  FiChevronRight,
+  FiX,
 } from "react-icons/fi";
 import { FaWhatsapp } from "react-icons/fa";
+// Swiper core & required modules
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Navigation, Pagination, Zoom } from "swiper/modules";
+
+// Swiper styles
+import "swiper/css";
+import "swiper/css/navigation";
+import "swiper/css/pagination";
+import "swiper/css/zoom";
 
 function Item() {
   const { id } = useParams();
@@ -24,7 +32,6 @@ function Item() {
   const [similarItems, setSimilarItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   // Fetch item data
   useEffect(() => {
@@ -38,13 +45,11 @@ function Item() {
         const response = await axios.get(
           `${import.meta.env.VITE_API_URL}/items/${id}`,
           {
-            withCredentials: true, // Required to accept cookie from server
+            withCredentials: true,
           }
         );
 
         const data = response.data;
-
-        // Set item details from the new schema
         setItem(data.details);
         setSimilarItems(data.similar_items || []);
       } catch (err) {
@@ -57,11 +62,6 @@ function Item() {
 
     fetchItemData();
   }, [id]);
-
-  // Reset current image index when item changes
-  useEffect(() => {
-    setCurrentImageIndex(0);
-  }, [item]);
 
   // Animation variants
   const containerVariants = {
@@ -104,6 +104,83 @@ function Item() {
       y: -5,
       transition: { duration: 0.2 },
     },
+  };
+
+  // Full Screen Image Viewer Component with Pinch Zoom
+  const FullScreenImageViewer = ({
+    images,
+    currentIndex,
+    isOpen,
+    onClose,
+    onIndexChange,
+  }) => {
+    const [swiperRef, setSwiperRef] = useState(null);
+
+    useEffect(() => {
+      if (isOpen) {
+        document.body.style.overflow = "hidden";
+      } else {
+        document.body.style.overflow = "unset";
+      }
+      return () => {
+        document.body.style.overflow = "unset";
+      };
+    }, [isOpen]);
+
+    if (!isOpen) return null;
+
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 bg-black bg-opacity-95 z-[100] flex items-center justify-center"
+      >
+        {/* Close Button */}
+        <motion.button
+          onClick={onClose}
+          className="absolute top-4 right-4 p-3 bg-black/30 text-white rounded-full z-10 shadow-xl border border-white/10"
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+        >
+          <FiX size={24} />
+        </motion.button>
+
+        {/* Image Carousel with Zoom */}
+        <Swiper
+          modules={[Navigation, Zoom]}
+          initialSlide={currentIndex}
+          onSwiper={setSwiperRef}
+          onSlideChange={(swiper) => {
+            onIndexChange(swiper.realIndex);
+          }}
+          zoom={{ maxRatio: 5 }}
+          grabCursor={true}
+          loop={images.length > 1}
+          navigation
+          className="w-full h-full"
+        >
+          {images.map((src, i) => (
+            <SwiperSlide key={i}>
+              <div className="swiper-zoom-container h-full flex items-center justify-center">
+                <img
+                  src={src}
+                  alt={`Fullscreen ${i + 1}`}
+                  className="object-contain max-w-full max-h-screen"
+                />
+              </div>
+            </SwiperSlide>
+          ))}
+        </Swiper>
+
+        {/* Image Counter */}
+        {images.length > 1 && (
+          <div className="absolute top-4 left-4 bg-black/30 text-white px-3 py-1 rounded-full text-sm shadow-lg z-10">
+            {currentIndex + 1} / {images.length}
+          </div>
+        )}
+      </motion.div>
+    );
   };
 
   // Skeleton Loading Component
@@ -313,11 +390,17 @@ function Item() {
     });
   };
 
-  const formatPrice = (price) => {
-    return new Intl.NumberFormat("en-IN", {
+  const formatPrice = (price, campus) => {
+    let options = {
       style: "currency",
       currency: "INR",
-    }).format(price);
+    };
+
+    if (campus === "DUB") {
+      options.currency = "AED";
+    }
+
+    return new Intl.NumberFormat("en-IN", options).format(price);
   };
 
   const handleWhatsApp = () => {
@@ -358,7 +441,7 @@ function Item() {
           {similarItem.title}
         </h4>
         <p className="text-green-600 dark:text-green-400 font-bold text-sm">
-          {formatPrice(similarItem.price)}
+          {formatPrice(similarItem.price, similarItem.campus)}
         </p>
         <p className="text-gray-500 dark:text-gray-400 text-xs mt-1">
           {similarItem.hostel}
@@ -367,238 +450,66 @@ function Item() {
     </motion.div>
   );
 
-  // Image Carousel Component
+  // **Updated Image Carousel Component**
   const ImageCarousel = () => {
+    const [fullScreenOpen, setFullScreenOpen] = useState(false);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
-    const [isDragging, setIsDragging] = useState(false);
 
-    // Get images from the fetched item data
     const displayImages =
       item.images && item.images.length > 0 ? item.images : [];
 
-    const hasMultipleImages = displayImages.length > 1;
-
-    const goToImage = useCallback(
-      (index) => {
-        if (hasMultipleImages) {
-          setCurrentImageIndex(index % displayImages.length);
-        }
-      },
-      [displayImages.length, hasMultipleImages]
-    );
-
-    const nextImage = useCallback(() => {
-      if (hasMultipleImages) {
-        setCurrentImageIndex((prev) => (prev + 1) % displayImages.length);
-      }
-    }, [displayImages.length, hasMultipleImages]);
-
-    const prevImage = useCallback(() => {
-      if (hasMultipleImages) {
-        setCurrentImageIndex(
-          (prev) => (prev - 1 + displayImages.length) % displayImages.length
-        );
-      }
-    }, [displayImages.length, hasMultipleImages]);
-
-    // Handle keyboard navigation only if multiple images
-    useEffect(() => {
-      if (!hasMultipleImages) return;
-
-      const handleKeyDown = (e) => {
-        if (e.key === "ArrowRight") nextImage();
-        if (e.key === "ArrowLeft") prevImage();
-      };
-      window.addEventListener("keydown", handleKeyDown);
-      return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [nextImage, prevImage, hasMultipleImages]);
-
-    // Auto play carousel only if multiple images
-    useEffect(() => {
-      if (!hasMultipleImages) return;
-
-      const interval = setInterval(() => {
-        if (!isDragging) {
-          nextImage();
-        }
-      }, 5000);
-      return () => clearInterval(interval);
-    }, [isDragging, nextImage, hasMultipleImages]);
-
-    const handleDragStart = () => {
-      if (hasMultipleImages) {
-        setIsDragging(true);
-      }
-    };
-
-    const handleDragEnd = () => {
-      if (hasMultipleImages) {
-        setIsDragging(false);
-      }
-    };
-
-    const handleImageError = () => {
-      if (hasMultipleImages && currentImageIndex < displayImages.length - 1) {
-        setCurrentImageIndex((prev) => prev + 1);
-      }
-    };
-
     if (displayImages.length === 0) {
       return (
-        <div className="flex items-center justify-center h-full min-h-[400px] bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 rounded-2xl">
-          <div className="text-center">
-            <div className="bg-gray-200 dark:bg-gray-700 rounded-full p-6 mb-6 mx-auto w-fit">
-              <FiImage size={48} className="text-gray-400 dark:text-gray-500" />
-            </div>
-            <p className="text-gray-500 dark:text-gray-400 text-lg font-medium">
-              No images available
-            </p>
+        <div className="flex items-center justify-center h-full min-h-[400px] bg-gray-100 dark:bg-gray-700 rounded-xl">
+          <div className="text-center text-gray-500 dark:text-gray-300">
+            <FiImage size={48} className="mx-auto mb-4" />
+            <p>No images available</p>
           </div>
         </div>
       );
     }
 
-    const imageVariants = {
-      enter: (direction) => ({
-        x: direction * 300,
-        opacity: 0,
-      }),
-      center: {
-        x: 0,
-        opacity: 1,
-        transition: {
-          x: { type: "spring", stiffness: 300, damping: 30 },
-          opacity: { duration: 0.3 },
-        },
-      },
-      exit: (direction) => ({
-        x: direction * -300,
-        opacity: 0,
-        transition: {
-          x: { type: "spring", stiffness: 300, damping: 30 },
-          opacity: { duration: 0.3 },
-        },
-      }),
-    };
-
-    const swipeConfidenceThreshold = 10000;
-    const swipePower = (offset, velocity) => Math.abs(offset) * velocity;
-
     return (
-      <div
-        className="relative h-full group bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 overflow-hidden shadow-xl"
-        onDragStart={hasMultipleImages ? handleDragStart : undefined}
-        onDragEnd={
-          hasMultipleImages
-            ? (e) => {
-                handleDragEnd();
-                const offset = e.velocityX;
-                if (
-                  swipePower(offset, e.velocity) < -swipeConfidenceThreshold
-                ) {
-                  nextImage();
-                } else if (
-                  swipePower(offset, e.velocity) > swipeConfidenceThreshold
-                ) {
-                  prevImage();
-                }
-              }
-            : undefined
-        }
-        drag={hasMultipleImages ? "x" : false}
-        dragConstraints={{ left: 0, right: 0 }}
-      >
-        {/* Main Image Display */}
-        <div className="relative h-full flex items-center justify-center p-8 select-none">
-          <AnimatePresence mode="wait" custom={1}>
-            <motion.img
-              key={currentImageIndex}
-              src={displayImages[currentImageIndex]}
-              alt={`${item.name} - Image ${currentImageIndex + 1}`}
-              className="max-h-[calc(100dvh-20rem)] sm:max-h-[calc(100dvh-16rem)] max-w-full object-contain rounded-xl shadow-2xl"
-              variants={hasMultipleImages ? imageVariants : {}}
-              initial={hasMultipleImages ? "enter" : {}}
-              animate={hasMultipleImages ? "center" : {}}
-              exit={hasMultipleImages ? "exit" : {}}
-              custom={1}
-              drag={hasMultipleImages ? "x" : false}
-              onDragStart={hasMultipleImages ? handleDragStart : undefined}
-              onDragEnd={
-                hasMultipleImages
-                  ? (e, info) => {
-                      const offset = info.offset.x;
-                      const velocity = info.velocity.x;
-                      if (
-                        swipePower(offset, velocity) < -swipeConfidenceThreshold
-                      ) {
-                        nextImage();
-                      } else if (
-                        swipePower(offset, velocity) > swipeConfidenceThreshold
-                      ) {
-                        prevImage();
-                      }
-                      handleDragEnd();
-                    }
-                  : undefined
-              }
-              onError={handleImageError}
-            />
-          </AnimatePresence>
-        </div>
-
-        {/* Navigation Arrows - Only show if multiple images */}
-        {hasMultipleImages && (
-          <>
-            <motion.button
-              onClick={prevImage}
-              aria-label="Previous image"
-              className="absolute z-10 left-4 top-1/2 transform -translate-y-1/2 bg-gray-500 text-white p-3 rounded-full opacity-0 group-hover:opacity-100 shadow-lg border border-white/20"
-              whileTap={{ scale: 0.95 }}
-            >
-              <FiChevronLeft size={24} />
-            </motion.button>
-
-            <motion.button
-              onClick={nextImage}
-              aria-label="Next image"
-              className="absolute z-10 right-4 top-1/2 transform -translate-y-1/2 bg-gray-500 text-white p-3 rounded-full opacity-0 group-hover:opacity-100 shadow-lg border border-white/20"
-              whileTap={{ scale: 0.95 }}
-            >
-              <FiChevronRight size={24} />
-            </motion.button>
-          </>
-        )}
-
-        {/* Image Indicators - Only show if multiple images */}
-        {hasMultipleImages && (
-          <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex space-x-3 bg-black/20 backdrop-blur-md rounded-full px-4 py-2">
-            {displayImages.map((_, index) => (
-              <motion.button
-                key={index}
-                onClick={() => goToImage(index)}
-                aria-label={`Go to image ${index + 1}`}
-                className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                  index === currentImageIndex
-                    ? "bg-white scale-125 shadow-lg"
-                    : "bg-white/50 hover:bg-white/70"
-                }`}
-                whileHover={{ scale: index === currentImageIndex ? 1.25 : 1.1 }}
-                whileTap={{ scale: 0.9 }}
-              />
+      <>
+        <div className="relative h-full w-full">
+          <Swiper
+            modules={[Navigation, Pagination, Zoom]}
+            navigation
+            pagination={{ clickable: true }}
+            zoom={true}
+            loop={true}
+            onSlideChange={(swiper) => setCurrentImageIndex(swiper.realIndex)}
+            className="h-full"
+          >
+            {displayImages.map((url, idx) => (
+              <SwiperSlide key={idx}>
+                <div className="swiper-zoom-container flex items-center justify-center">
+                  <img
+                    src={url}
+                    alt={`Image ${idx + 1}`}
+                    className="object-contain max-h-[90vh] cursor-pointer"
+                    onClick={() => setFullScreenOpen(true)}
+                  />
+                </div>
+              </SwiperSlide>
             ))}
-          </div>
+          </Swiper>
+          {displayImages.length > 1 && (
+            <div className="absolute top-4 right-4 bg-black/50 text-white text-sm px-3 py-1 rounded-full shadow-lg z-10">
+              {currentImageIndex + 1} / {displayImages.length}
+            </div>
+          )}
+        </div>
+        {fullScreenOpen && (
+          <FullScreenImageViewer
+            images={displayImages}
+            currentIndex={currentImageIndex}
+            isOpen={fullScreenOpen}
+            onClose={() => setFullScreenOpen(false)}
+            onIndexChange={setCurrentImageIndex}
+          />
         )}
-
-        {/* Image Counter - Only show if multiple images */}
-        {hasMultipleImages && (
-          <div className="absolute top-6 right-6 bg-black/20 backdrop-blur-md text-white px-4 py-2 rounded-full text-sm font-medium shadow-lg border border-white/20">
-            {currentImageIndex + 1} / {displayImages.length}
-          </div>
-        )}
-
-        {/* Gradient overlay for contrast */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-black/10 pointer-events-none rounded-2xl" />
-      </div>
+      </>
     );
   };
 
@@ -668,7 +579,7 @@ function Item() {
                   className="text-3xl sm:text-4xl font-bold text-green-600 dark:text-green-400 mb-6"
                   variants={itemVariants}
                 >
-                  {formatPrice(item.price)}
+                  {formatPrice(item.price, item.campus)}
                 </motion.div>
               </div>
 

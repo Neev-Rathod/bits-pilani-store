@@ -97,7 +97,7 @@ const Feedback = () => {
       );
 
       // Success check
-      if (response.data.status === "success") {
+      if (response.data.status === "ok") {
         setIsSubmitting(false);
         setIsSubmitted(true);
       } else {

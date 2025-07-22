@@ -72,8 +72,7 @@ const Footer = () => {
               <motion.button
                 onClick={() => {
                   navigate(path);
-                  if (path === "/")
-                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  if (path === "/") window.location.reload();
                 }}
                 className="flex flex-col items-center w-full"
                 whileTap={{ scale: 0.92 }}

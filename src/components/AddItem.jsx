@@ -7,7 +7,8 @@ import { RxCross1 } from "react-icons/rx";
 import { FiArrowLeft } from "react-icons/fi";
 import axios from "axios";
 import TermsModal from "./TermsAndCondition";
-
+import { TbCurrencyDirham } from "react-icons/tb";
+import compressImages from "./compressImages";
 const VITE_API_URL = import.meta.env.VITE_API_URL;
 
 const initialFormState = {
@@ -136,30 +137,44 @@ const AddItem = ({ user, categories, setCategories }) => {
     }
   };
 
-  const handleImageChange = (e) => {
+  // ...
+
+  const handleImageChange = async (e) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
+
     if (formData.images.length + files.length > 5) {
       toast.error("You can upload maximum 5 images");
       return;
     }
-    const newPreviewImages = [];
-    files.forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        newPreviewImages.push(ev.target.result);
-        if (newPreviewImages.length === files.length) {
-          setPreviewImages([...previewImages, ...newPreviewImages]);
-        }
-      };
-      reader.readAsDataURL(file);
-    });
-    setFormData((prev) => ({
-      ...prev,
-      images: [...prev.images, ...files],
-    }));
-    if (formErrors.images) {
-      setFormErrors((prev) => ({ ...prev, images: null }));
+
+    try {
+      // Compress the images
+      const compressedFiles = await compressImages(files, 300, 0.7); // 300KB max size, 70% quality
+
+      const newPreviewImages = [];
+      compressedFiles.forEach((file) => {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          newPreviewImages.push(ev.target.result);
+          if (newPreviewImages.length === compressedFiles.length) {
+            setPreviewImages([...previewImages, ...newPreviewImages]);
+          }
+        };
+        reader.readAsDataURL(file);
+      });
+
+      setFormData((prev) => ({
+        ...prev,
+        images: [...prev.images, ...compressedFiles],
+      }));
+
+      if (formErrors.images) {
+        setFormErrors((prev) => ({ ...prev, images: null }));
+      }
+    } catch (error) {
+      console.error("Error compressing images:", error);
+      toast.error("Error compressing images. Please try again.");
     }
   };
 
@@ -382,12 +397,15 @@ const AddItem = ({ user, categories, setCategories }) => {
                 htmlFor="price"
                 className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
               >
-                Price (₹)
+                Price{" "}
+                <span>
+                  {user.campus === "DUB" ? <TbCurrencyDirham /> : "(₹)"}
+                </span>
               </label>
               <div className="mt-1 relative rounded-md shadow-sm">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <span className="text-gray-500 dark:text-gray-400 sm:text-sm">
-                    ₹
+                    {user.campus === "DUB" ? <TbCurrencyDirham /> : "₹"}
                   </span>
                 </div>
                 <input

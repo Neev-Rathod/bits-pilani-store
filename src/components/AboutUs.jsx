@@ -110,40 +110,6 @@ const AboutPage = () => {
           </div>
         </motion.div>
 
-        {/* Open Source Section */}
-        <motion.div variants={itemVariants} className="mb-20">
-          <div className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-900/30 dark:to-blue-900/30 rounded-2xl p-8 shadow-2xl border border-green-200 dark:border-green-500/20">
-            <div className="flex items-center mb-6">
-              <FaCode className="text-green-600 dark:text-green-400 text-2xl mr-3" />
-              <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
-                Open Source Project
-              </h2>
-            </div>
-            <p className="text-gray-600 dark:text-gray-300 text-lg leading-relaxed mb-6">
-              BITS Pawnshop is an open source project, and we welcome
-              contributions from the BITS community. If you're interested in web
-              development or have ideas to improve the platform, check out
-              Vishrut's GitHub repository:
-            </p>
-            <motion.a
-              href="https://github.com/MrBottleTree/Bits-Pilani-Store.git"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-900 dark:text-white px-6 py-3 rounded-lg transition-colors duration-300 border border-gray-300 dark:border-gray-600"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <FaGithub className="mr-2 text-xl" />
-              <div>
-                <div className="font-semibold">Bits-Pilani-Store</div>
-                <div className="text-sm text-gray-500 dark:text-gray-400">
-                  github.com/MrBottleTree/Bits-Pilani-Store.git
-                </div>
-              </div>
-            </motion.a>
-          </div>
-        </motion.div>
-
         {/* Team Section */}
         <motion.div variants={itemVariants}>
           <div className="flex items-center justify-center mb-12">

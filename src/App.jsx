@@ -16,10 +16,6 @@ import Feedback from "./components/Feedback";
 import AboutPage from "./components/AboutUs";
 import MyListings from "./components/MyListing";
 import Login from "./components/Login";
-
-// const Home = lazy(() => import("./components/Home"));
-// const Item = lazy(() => import("./components/Items"));
-// const MyListings = lazy(() => import("./components/MyListing"));
 export const ProtectedRoute = ({ children, user }) => {
   if (!user) {
     return <Navigate to="/login" replace />;
@@ -230,11 +226,6 @@ function App() {
                   <Route
                     path="/"
                     element={
-                      // <Suspense
-                      //   fallback={
-                      //     <div className="text-center p-4">Loading Home...</div>
-                      //   }
-                      // >
                       <Home
                         searchVal={searchVal}
                         selectedCategory={selectedCategory}
@@ -243,7 +234,6 @@ function App() {
                         categories={categories}
                         setCategories={setCategories}
                       />
-                      // </Suspense>
                     }
                   />
 
@@ -271,30 +261,9 @@ function App() {
                   <Route path="/aboutus" element={<AboutPage />} />
                   <Route
                     path="/mylistings"
-                    element={
-                      // <Suspense
-                      //   fallback={
-                      //     <div className="text-center p-4">
-                      //       Loading My Listings...
-                      //     </div>
-                      //   }
-                      // >
-                      <MyListings user={user} categories={categories} />
-                      // </Suspense>
-                    }
+                    element={<MyListings user={user} />}
                   />
-                  <Route
-                    path="/item/:id"
-                    element={
-                      // <Suspense
-                      //   fallback={
-                      //     <div className="text-center p-4">Loading Item...</div>
-                      //   }
-                      // >
-                      <Item />
-                      // </Suspense>
-                    }
-                  />
+                  <Route path="/item/:id" element={<Item />} />
                   {/* Catch all route for protected area */}
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>

@@ -34,6 +34,7 @@ const categoryIcons = {
 };
 
 const ITEMS_PER_PAGE = 20;
+const CACHE_EXPIRY_MINUTES = 2;
 
 // Skeleton loader component
 const SkeletonLoader = () => {
@@ -70,6 +71,138 @@ const SkeletonGrid = ({ count = 10 }) => {
   );
 };
 
+// Local Storage Helper Functions
+const STORAGE_KEYS = {
+  ITEMS_DATA: "marketplace_items_data",
+  CATEGORIES_DATA: "marketplace_categories_data",
+};
+
+const getStorageKey = (params) => {
+  // Create a unique key based on parameters
+  const { searchVal, category, campus, sortType } = params;
+  return `${searchVal || ""}_${category || ""}_${campus || ""}_${
+    sortType || ""
+  }`;
+};
+
+const isDataExpired = (timestamp) => {
+  if (!timestamp) return true;
+  const now = new Date().getTime();
+  const diff = now - timestamp;
+  const minutesDiff = diff / (1000 * 60);
+  return minutesDiff > CACHE_EXPIRY_MINUTES;
+};
+
+const getCachedData = (storageKey, ignoreExpiry = false) => {
+  try {
+    const cached = localStorage.getItem(STORAGE_KEYS.ITEMS_DATA);
+    if (!cached) return null;
+
+    const parsedCache = JSON.parse(cached);
+    const data = parsedCache[storageKey];
+
+    if (!data) return null;
+
+    // If ignoreExpiry is true, return data regardless of expiry
+    if (ignoreExpiry || !isDataExpired(data.timestamp)) {
+      return data;
+    }
+
+    return null;
+  } catch (error) {
+    console.error("Error reading cached data:", error);
+    return null;
+  }
+};
+
+const setCachedData = (storageKey, data) => {
+  try {
+    const cached = localStorage.getItem(STORAGE_KEYS.ITEMS_DATA);
+    const parsedCache = cached ? JSON.parse(cached) : {};
+
+    parsedCache[storageKey] = {
+      ...data,
+      timestamp: new Date().getTime(),
+    };
+
+    localStorage.setItem(STORAGE_KEYS.ITEMS_DATA, JSON.stringify(parsedCache));
+  } catch (error) {
+    console.error("Error saving cached data:", error);
+  }
+};
+
+const updateCachedItems = (storageKey, newItems, page) => {
+  try {
+    const cached = localStorage.getItem(STORAGE_KEYS.ITEMS_DATA);
+    if (!cached) return;
+
+    const parsedCache = JSON.parse(cached);
+    const data = parsedCache[storageKey];
+
+    if (data) {
+      // Append new items to existing items
+      data.items = [...(data.items || []), ...newItems];
+      data.lastPage = page;
+      data.timestamp = new Date().getTime(); // Update timestamp
+      parsedCache[storageKey] = data;
+      localStorage.setItem(
+        STORAGE_KEYS.ITEMS_DATA,
+        JSON.stringify(parsedCache)
+      );
+    }
+  } catch (error) {
+    console.error("Error updating cached items:", error);
+  }
+};
+
+const getCachedCategories = () => {
+  try {
+    const cached = localStorage.getItem(STORAGE_KEYS.CATEGORIES_DATA);
+    if (!cached) return null;
+
+    const data = JSON.parse(cached);
+    // Always return categories, ignore expiry for categories
+    return data.categories;
+  } catch (error) {
+    console.error("Error reading cached categories:", error);
+    return null;
+  }
+};
+
+const setCachedCategories = (categories) => {
+  try {
+    const data = {
+      categories,
+      timestamp: new Date().getTime(),
+    };
+    localStorage.setItem(STORAGE_KEYS.CATEGORIES_DATA, JSON.stringify(data));
+  } catch (error) {
+    console.error("Error saving cached categories:", error);
+  }
+};
+
+// Helper function to compare arrays of items
+const areItemsEqual = (items1, items2) => {
+  if (!items1 || !items2 || items1.length !== items2.length) return false;
+
+  // Compare by id and key properties
+  for (let i = 0; i < items1.length; i++) {
+    const item1 = items1[i];
+    const item2 = items2[i];
+
+    if (
+      item1.id !== item2.id ||
+      item1.title !== item2.title ||
+      item1.price !== item2.price ||
+      item1.is_sold !== item2.is_sold
+    ) {
+      return false;
+    }
+  }
+
+  return true;
+};
+
 const Home = ({
   searchVal = "",
   selectedCategory,
@@ -85,10 +218,10 @@ const Home = ({
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(null);
-  const [categoryScrollRef, setCategoryScrollRef] = useState(null);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [debouncedSearchVal, setDebouncedSearchVal] = useState(searchVal);
+  const [backgroundRefreshing, setBackgroundRefreshing] = useState(false);
   const mainContainerRef = useRef(null);
   const navigate = useNavigate();
 
@@ -115,9 +248,164 @@ const Home = ({
     }
   };
 
+  // Create storage key based on current parameters
+  const getCurrentStorageKey = useCallback(() => {
+    return getStorageKey({
+      searchVal: debouncedSearchVal,
+      category: selectedCategory,
+      campus: selectedCampus,
+      sortType,
+    });
+  }, [debouncedSearchVal, selectedCategory, selectedCampus, sortType]);
+
+  // Background refresh function
+  const backgroundRefresh = useCallback(
+    async (storageKey) => {
+      try {
+        setBackgroundRefreshing(true);
+
+        const params = new URLSearchParams();
+
+        // Add parameters
+        if (debouncedSearchVal && debouncedSearchVal.trim() !== "") {
+          params.append("q", debouncedSearchVal.trim());
+        }
+
+        if (selectedCategory && selectedCategory !== "All Categories") {
+          params.append("cat", selectedCategory);
+        }
+
+        if (selectedCampus && selectedCampus !== "All Campuses") {
+          params.append("c", selectedCampus);
+        }
+
+        params.append("p", "1");
+        params.append("s", getSortValue(sortType).toString());
+
+        // Make API calls
+        const [itemsResponse, categoriesResponse] = await Promise.all([
+          axios.get(
+            `${import.meta.env.VITE_API_URL}/items?${params.toString()}`,
+            { withCredentials: true }
+          ),
+          axios.get(`${import.meta.env.VITE_API_URL}/categories`, {
+            withCredentials: true,
+          }),
+        ]);
+
+        if (itemsResponse.data.status === "ok") {
+          const newItems = itemsResponse.data.items;
+          const totalItemsCatData = itemsResponse.data.total_items_cat || {};
+          const newCategories = categoriesResponse.data.data;
+
+          // Check if items have changed
+          const currentItems = items;
+          if (!areItemsEqual(currentItems, newItems)) {
+            console.log("Data has changed, updating...");
+
+            // Update items
+            setItems(newItems);
+            setTotalItemsCat(totalItemsCatData);
+
+            // Update categories
+            setCategories(newCategories);
+
+            // Calculate hasMore
+            const totalPages = Math.ceil(
+              itemsResponse.data.total_items / ITEMS_PER_PAGE
+            );
+            const hasMoreItems = 1 < totalPages;
+            setHasMore(hasMoreItems);
+
+            // Update cache with fresh data
+            setCachedData(storageKey, {
+              items: newItems,
+              totalItemsCat: totalItemsCatData,
+              hasMore: hasMoreItems,
+              lastPage: 1,
+              params: {
+                searchVal: debouncedSearchVal,
+                category: selectedCategory,
+                campus: selectedCampus,
+                sortType,
+              },
+            });
+
+            // Update categories cache
+            setCachedCategories(newCategories);
+          } else {
+            console.log("Data unchanged, updating cache timestamp only");
+            // Data is same, just update the timestamp in cache
+            const cachedData = getCachedData(storageKey, true);
+            if (cachedData) {
+              setCachedData(storageKey, {
+                ...cachedData,
+                timestamp: new Date().getTime(),
+              });
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Background refresh failed:", error);
+
+        // Check if the error is 403 (Forbidden) - login expired
+        if (error.response?.status === 403) {
+          // Clear localStorage to logout user
+          localStorage.clear();
+          toast.error("Login expired. Please login again.");
+          // Redirect to login or refresh page
+          window.location.reload();
+          return;
+        }
+
+        // Don't show error to user for other background refresh failures
+      } finally {
+        setBackgroundRefreshing(false);
+      }
+    },
+    [
+      debouncedSearchVal,
+      selectedCategory,
+      selectedCampus,
+      sortType,
+      items,
+      setCategories,
+    ]
+  );
+
   // Fetch items from API
   const fetchItems = useCallback(
-    async (page = 1, isLoadMore = false) => {
+    async (page = 1, isLoadMore = false, forceRefresh = false) => {
+      const storageKey = getCurrentStorageKey();
+
+      // For initial load (page 1, not load more), always try cache first
+      if (!isLoadMore && !forceRefresh && page === 1) {
+        const cachedData = getCachedData(storageKey, true); // Ignore expiry for initial load
+
+        if (cachedData) {
+          console.log("Loading data from cache");
+          setItems(cachedData.items || []);
+          setTotalItemsCat(cachedData.totalItemsCat || {});
+          setCurrentPage(cachedData.lastPage || 1);
+          setHasMore(cachedData.hasMore !== false);
+
+          // Load categories from cache
+          const cachedCategories = getCachedCategories();
+          if (cachedCategories) {
+            setCategories(cachedCategories);
+          }
+
+          // Check if cache is expired and trigger background refresh
+          if (isDataExpired(cachedData.timestamp)) {
+            console.log("Cache expired, triggering background refresh");
+            setTimeout(() => backgroundRefresh(storageKey), 100); // Small delay to let UI render first
+          }
+
+          return;
+        }
+      }
+
+      // If no cache or force refresh, show loading and fetch
       if (isLoadMore) {
         setLoadingMore(true);
       } else {
@@ -144,7 +432,7 @@ const Home = ({
         params.append("p", page.toString());
         params.append("s", getSortValue(sortType).toString());
 
-        // Make both API calls with axios
+        // Make both API calls
         const response = await axios.get(
           `${import.meta.env.VITE_API_URL}/items?${params.toString()}`,
           {
@@ -161,30 +449,58 @@ const Home = ({
             }
           );
           setCategories(res.data.data);
+          setCachedCategories(res.data.data);
         }
 
         // Check response status and set items data
         if (response.data.status === "ok") {
           const newItems = response.data.items;
-
-          if (isLoadMore) {
-            setItems((prev) => [...prev, ...newItems]);
-          } else {
-            setItems(newItems);
-          }
-
-          setTotalItemsCat(response.data.total_items_cat || {});
+          const totalItemsCatData = response.data.total_items_cat || {};
 
           // Check if there are more items to load
           const totalPages = Math.ceil(
             response.data.total_items / ITEMS_PER_PAGE
           );
-          setHasMore(page < totalPages);
+          const hasMoreItems = page < totalPages;
+
+          if (isLoadMore) {
+            setItems((prev) => [...prev, ...newItems]);
+            // Update cache with new items
+            updateCachedItems(storageKey, newItems, page);
+          } else {
+            setItems(newItems);
+            // Save initial data to cache
+            setCachedData(storageKey, {
+              items: newItems,
+              totalItemsCat: totalItemsCatData,
+              hasMore: hasMoreItems,
+              lastPage: page,
+              params: {
+                searchVal: debouncedSearchVal,
+                category: selectedCategory,
+                campus: selectedCampus,
+                sortType,
+              },
+            });
+          }
+
+          setTotalItemsCat(totalItemsCatData);
+          setHasMore(hasMoreItems);
         } else {
           setError("Failed to fetch items from server");
-          toast.error(response.data.error || "gotcha");
+          toast.error(response.data.error || "Error fetching items");
         }
       } catch (err) {
+        // Check if the error is 403 (Forbidden) - login expired
+        if (err.response?.status === 403) {
+          // Clear localStorage to logout user
+          localStorage.clear();
+          toast.error("Login expired. Please login again.");
+          // Redirect to login or refresh page
+          window.location.reload();
+          return;
+        }
+
         setError(err.response?.data?.message || "Failed to fetch item");
         toast.error("Failed to fetch items try logging in again");
       } finally {
@@ -198,6 +514,8 @@ const Home = ({
       selectedCampus,
       sortType,
       setCategories,
+      getCurrentStorageKey,
+      backgroundRefresh,
     ]
   );
 
@@ -223,7 +541,7 @@ const Home = ({
     const { scrollTop, scrollHeight, clientHeight } = mainContainerRef.current;
 
     // Load more when user is near the bottom (200px threshold)
-    if (scrollHeight - scrollTop - clientHeight < 200) {
+    if (scrollHeight - scrollTop - clientHeight < 1000) {
       const nextPage = currentPage + 1;
       setCurrentPage(nextPage);
       fetchItems(nextPage, true);
@@ -242,7 +560,6 @@ const Home = ({
   // Handle sold/unsold filtering (client-side for now)
   const displayItems = useMemo(() => {
     let result = [...items];
-
     return result;
   }, [items, sortType]);
 
@@ -261,9 +578,6 @@ const Home = ({
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
-      transition: {
-        staggerChildren: 0.05,
-      },
     },
   };
 
@@ -311,6 +625,9 @@ const Home = ({
             className="text-xl font-bold text-gray-800 dark:text-gray-100"
           >
             Campus Marketplace
+            {backgroundRefreshing && (
+              <span className="text-xs text-blue-500 ml-2">Updating...</span>
+            )}
           </motion.h1>
           <motion.button
             whileTap={{ scale: 0.95 }}
@@ -408,10 +725,7 @@ const Home = ({
 
         {/* Categories scroll */}
         <div className="mb-3 overflow-x-auto no-scrollbar">
-          <div
-            className="flex space-x-2 overflow-auto w-full pb-2 "
-            ref={setCategoryScrollRef}
-          >
+          <div className="flex space-x-2 overflow-auto w-full pb-2 ">
             {categoriesWithAll.map((category) => (
               <button
                 key={category.id}
@@ -453,8 +767,6 @@ const Home = ({
               <option value="newest">Newest</option>
               <option value="priceAsc">Price: Low-High</option>
               <option value="priceDesc">Price: High-Low</option>
-              {/* <option value="sold">Sold</option>
-              <option value="unsold">Unsold</option> */}
             </select>
             <FaSort className="absolute left-2 top-2 text-gray-500 dark:text-gray-400 text-xs" />
           </div>
@@ -469,7 +781,7 @@ const Home = ({
             <div className="text-5xl mb-2">⚠️</div>
             <p className="text-lg text-red-600 dark:text-red-400">{error}</p>
             <button
-              onClick={() => fetchItems(1, false)}
+              onClick={() => fetchItems(1, false, true)}
               className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
             >
               Retry

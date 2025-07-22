@@ -18,7 +18,7 @@ import { toast } from "react-toastify";
 
 const VITE_API_URL = import.meta.env.VITE_API_URL;
 
-const MyListings = () => {
+const MyListings = ({ user }) => {
   const navigate = useNavigate();
 
   // State management
@@ -94,6 +94,9 @@ const MyListings = () => {
   };
 
   const formatPrice = (price) => {
+    if (user.campus === "DUB") {
+      return `AED${price.toLocaleString("en-AE")}`;
+    }
     return `₹${price.toLocaleString("en-IN")}`;
   };
 
