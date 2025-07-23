@@ -573,6 +573,18 @@ const Home = ({
       minute: "2-digit",
     });
   };
+  const handleWhatsApp = (e, item) => {
+    e.stopPropagation(); // Prevent parent onClick from triggering
+    // const message = encodeURIComponent(
+    //   `Hi! I'm interested in your ${item.title} listed on BITS Pilani Store.`
+    // );
+    // const phoneNumber = item.contact?.replace(/\+/, "") || "";
+    if (item.contact) {
+      window.open(item.contact, "_blank");
+    } else {
+      toast.error("Phone number not available for this item");
+    }
+  };
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -797,78 +809,84 @@ const Home = ({
             animate="visible"
             className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6 "
           >
-            {displayItems.map((item) => (
-              <motion.div
-                key={item.id}
-                variants={itemVariants}
-                whileHover={{ scale: item.is_sold ? 1 : 1.02 }}
-                transition={{ duration: 0.2 }}
-                className={`bg-white dark:bg-gray-800 rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-700 flex flex-col relative ${
-                  item.is_sold
-                    ? "opacity-60 cursor-not-allowed"
-                    : "cursor-pointer"
-                }`}
-                onClick={() => !item.is_sold && navigate(`/item/${item.id}`)}
-              >
-                <div className="relative aspect-[3/4] overflow-hidden bg-gray-100 dark:bg-gray-700">
-                  <img
-                    src={item.firstimage}
-                    alt={item.title}
-                    className={`w-full h-full object-cover ${
-                      item.is_sold ? "grayscale" : ""
-                    }`}
-                    loading="lazy"
-                  />
-                  {item.is_sold && (
-                    <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
-                      <div className="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-bold transform -rotate-12">
-                        SOLD
+            {displayItems.map((item) => {
+              return (
+                <motion.div
+                  key={item.id}
+                  variants={itemVariants}
+                  whileHover={{ scale: item.is_sold ? 1 : 1.02 }}
+                  transition={{ duration: 0.2 }}
+                  className={`bg-white dark:bg-gray-800 rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-700 flex flex-col relative ${
+                    item.is_sold
+                      ? "opacity-60 cursor-not-allowed"
+                      : "cursor-pointer"
+                  }`}
+                  onClick={() => !item.is_sold && navigate(`/item/${item.id}`)}
+                >
+                  <div className="relative aspect-[3/4] overflow-hidden bg-gray-100 dark:bg-gray-700">
+                    <img
+                      src={item.firstimage}
+                      alt={item.title}
+                      className={`w-full h-full object-cover ${
+                        item.is_sold ? "grayscale" : ""
+                      }`}
+                      loading="lazy"
+                    />
+                    {item.is_sold && (
+                      <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center">
+                        <div className="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-bold transform -rotate-12">
+                          SOLD
+                        </div>
                       </div>
-                    </div>
-                  )}
-                </div>
-                <div className="p-2 flex-grow">
-                  <h3 className="text-sm font-medium mb-1 text-gray-800 dark:text-white line-clamp-1">
-                    {item.title}
-                  </h3>
+                    )}
+                  </div>
+                  <div className="p-2 flex-grow">
+                    <h3 className="text-sm font-medium mb-1 text-gray-800 dark:text-white line-clamp-1">
+                      {item.title}
+                    </h3>
 
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-1 text-lg text-gray-600 dark:text-gray-400 font-bold">
-                      <span className="truncate">₹{item.price}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <div className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
-                        <FiCalendar
-                          className="text-blue-500 shrink-0"
-                          size={12}
-                        />
-                        <span>{formatDate(item.date)}</span>
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-1 text-lg text-gray-600 dark:text-gray-400 font-bold">
+                        <span className="truncate">₹{item.price}</span>
                       </div>
-                    </div>
-                    <div className="flex justify-between">
-                      <div className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
-                        <BiHome className="text-blue-500 shrink-0" size={12} />
-                        <span>{item.hostel}</span>
+                      <div className="flex justify-between">
+                        <div className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
+                          <FiCalendar
+                            className="text-blue-500 shrink-0"
+                            size={12}
+                          />
+                          <span>{formatDate(item.date)}</span>
+                        </div>
+                      </div>
+                      <div className="flex justify-between">
+                        <div className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-400">
+                          <BiHome
+                            className="text-blue-500 shrink-0"
+                            size={12}
+                          />
+                          <span>{item.hostel}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-                <div className="p-2 bg-gray-50 dark:bg-gray-700/50 border-t border-gray-200 dark:border-gray-700">
-                  <motion.button
-                    whileTap={{ scale: item.is_sold ? 1 : 0.95 }}
-                    disabled={item.is_sold}
-                    className={`w-full py-2 rounded text-xs font-medium transition-colors flex items-center justify-center gap-1 ${
-                      item.is_sold
-                        ? "bg-gray-400 text-gray-600 cursor-not-allowed"
-                        : "bg-green-500 hover:bg-green-600 text-white"
-                    }`}
-                  >
-                    <FaWhatsapp size={16} />
-                    {item.is_sold ? "Sold" : "Contact"}
-                  </motion.button>
-                </div>
-              </motion.div>
-            ))}
+                  <div className="p-2 bg-gray-50 dark:bg-gray-700/50 border-t border-gray-200 dark:border-gray-700">
+                    <motion.button
+                      whileTap={{ scale: item.is_sold ? 1 : 0.95 }}
+                      disabled={item.is_sold}
+                      onClick={(e) => handleWhatsApp(e, item)}
+                      className={`w-full py-2 rounded text-xs font-medium transition-colors flex items-center justify-center gap-1 ${
+                        item.is_sold
+                          ? "bg-gray-400 text-gray-600 cursor-not-allowed"
+                          : "bg-green-500 hover:bg-green-600 text-white"
+                      }`}
+                    >
+                      <FaWhatsapp size={16} />
+                      {item.is_sold ? "Sold" : "Contact"}
+                    </motion.button>
+                  </div>
+                </motion.div>
+              );
+            })}
           </motion.div>
         ) : !loading && !error && displayItems.length === 0 ? (
           <div className="text-center py-8 bg-white dark:bg-gray-800 rounded-lg shadow-md">
