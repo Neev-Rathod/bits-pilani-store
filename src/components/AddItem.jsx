@@ -6,9 +6,10 @@ import { FaUpload } from "react-icons/fa";
 import { RxCross1 } from "react-icons/rx";
 import { FiArrowLeft } from "react-icons/fi";
 import axios from "axios";
-import TermsModal from "./TermsAndCondition";
 import { TbCurrencyDirham } from "react-icons/tb";
 import compressImages from "./compressImages";
+import { getCSRFTokenFromCookies } from "../App"; // Adjust the import path as needed
+import { b } from "motion/react-client";
 const VITE_API_URL = import.meta.env.VITE_API_URL;
 
 const initialFormState = {
@@ -26,7 +27,6 @@ const AddItem = ({ user, categories, setCategories }) => {
   const navigate = useNavigate();
   const { id } = useParams();
   const fileInputRef = useRef(null);
-  const [isTermsOpen, setIsTermsOpen] = useState(false);
   const [previewImages, setPreviewImages] = useState([]);
   const [formErrors, setFormErrors] = useState({});
   const [formData, setFormData] = useState(initialFormState);
@@ -56,6 +56,14 @@ const AddItem = ({ user, categories, setCategories }) => {
         setHostels(res.data);
       } catch (err) {
         console.log(err);
+        if (err.response?.status === 403) {
+          // Clear localStorage to logout user
+          localStorage.clear();
+          toast.error("Login expired. Please login again.");
+          // Redirect to login or refresh page
+          window.location.reload();
+          return;
+        }
       }
     };
     getHostel();
@@ -68,6 +76,14 @@ const AddItem = ({ user, categories, setCategories }) => {
         setCategories(res.data.data);
       } catch (err) {
         console.error("Error fetching categories:", err);
+        if (err.response?.status === 403) {
+          // Clear localStorage to logout user
+          localStorage.clear();
+          toast.error("Login expired. Please login again.");
+          // Redirect to login or refresh page
+          window.location.reload();
+          return;
+        }
       }
     };
     if (!categories || categories.length === 0) {
@@ -91,6 +107,14 @@ const AddItem = ({ user, categories, setCategories }) => {
         }
       } catch (err) {
         console.error("Error fetching user details:", err);
+        if (err.response?.status === 403) {
+          // Clear localStorage to logout user
+          localStorage.clear();
+          toast.error("Login expired. Please login again.");
+          // Redirect to login or refresh page
+          window.location.reload();
+          return;
+        }
       }
     };
     if (!id) {
@@ -119,6 +143,14 @@ const AddItem = ({ user, categories, setCategories }) => {
           }
         } catch (err) {
           console.error("Error fetching item for edit:", err);
+          if (err.response?.status === 403) {
+            // Clear localStorage to logout user
+            localStorage.clear();
+            toast.error("Login expired. Please login again.");
+            // Redirect to login or refresh page
+            window.location.reload();
+            return;
+          }
           toast.error("Error loading item details");
         }
       }
@@ -202,8 +234,7 @@ const AddItem = ({ user, categories, setCategories }) => {
     const errors = {};
     if (!formData.productName.trim())
       errors.productName = "Product name is required";
-    if (!formData.description.trim())
-      errors.description = "Description is required";
+
     if (!String(formData.price).trim()) errors.price = "Price is required";
     if (isNaN(Number(formData.price)) || Number(formData.price) < 0)
       errors.price = "Please enter a valid price";
@@ -221,20 +252,6 @@ const AddItem = ({ user, categories, setCategories }) => {
     return errors;
   };
 
-  const getCSRFTokenFromCookies = () => {
-    const name = "csrftoken=";
-    const decodedCookie = decodeURIComponent(document.cookie);
-    const cookies = decodedCookie.split(";");
-
-    for (let i = 0; i < cookies.length; i++) {
-      let c = cookies[i].trim();
-      if (c.indexOf(name) === 0) {
-        return c.substring(name.length, c.length);
-      }
-    }
-    return null;
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!user) {
@@ -247,9 +264,14 @@ const AddItem = ({ user, categories, setCategories }) => {
       setFormErrors(errors);
       return;
     }
+
     const categoryId = categories.find(
-      (cat) => cat.name == formData.category
-    ).id;
+      (cat) => cat.name === formData.category
+    )?.id;
+    if (!categoryId) {
+      toast.error("Invalid category selected.");
+      return;
+    }
 
     const formDataToSend = new FormData();
     formDataToSend.append("itemName", formData.productName);
@@ -266,36 +288,55 @@ const AddItem = ({ user, categories, setCategories }) => {
       }
     });
 
-    try {
-      const csrfToken = getCSRFTokenFromCookies();
-      if (!csrfToken) {
-        toast.error("Failed to retrieve CSRF token.");
-        return;
+    const csrfTokens = getCSRFTokenFromCookies();
+    if (!csrfTokens || csrfTokens.length === 0) {
+      toast.error("No CSRF token found. Please log in again.");
+      localStorage.clear();
+      window.location.reload();
+      return;
+    }
+
+    let success = false;
+    let errorOccurred = false;
+    for (const csrfToken of csrfTokens) {
+      try {
+        const endpoint = id
+          ? `${import.meta.env.VITE_API_URL}/items/${id}`
+          : `${import.meta.env.VITE_API_URL}/items/`;
+
+        const response = await axios.post(endpoint, formDataToSend, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            "X-CSRFToken": csrfToken,
+          },
+          withCredentials: true,
+        });
+
+        toast.success(
+          id ? "Item updated successfully!" : "Product listed successfully!"
+        );
+        success = true;
+        break; // Exit on success
+      } catch (err) {
+        if (err.response?.status === 401) {
+          toast.error(
+            "Unauthorized. Please log in with Bits Email to sell Item."
+          );
+          errorOccurred = true;
+          break; // Exit loop on unauthorized error
+        }
+        continue; // Try next token
       }
-
-      const endpoint = id
-        ? `${VITE_API_URL}/items/${id}`
-        : `${VITE_API_URL}/items/`;
-      const res = await axios.post(endpoint, formDataToSend, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-          "X-CSRFToken": csrfToken,
-        },
-        withCredentials: true,
-      });
-
-      toast.success(
-        id ? "Item updated successfully!" : "Product listed successfully!"
-      );
-
+    }
+    if (errorOccurred) {
+      return;
+    }
+    if (!success) {
+      toast.error("All CSRF tokens failed. Please try again.");
+    } else {
       navigate("/mylistings");
-    } catch (err) {
-      toast.error("Error saving item. Please try again.");
-      console.error(err);
     }
   };
-
-  const toggleTermsModal = () => setIsTermsOpen((open) => !open);
 
   // Animations
   const fadeIn = {
@@ -592,13 +633,14 @@ const AddItem = ({ user, categories, setCategories }) => {
                     className="font-medium text-gray-700 dark:text-gray-300"
                   >
                     I agree to the{" "}
-                    <button
-                      type="button"
-                      onClick={toggleTermsModal}
-                      className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline"
+                    <a
+                      href="/terms.html"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
                     >
-                      terms and conditions
-                    </button>
+                      Terms of Service
+                    </a>
                   </label>
                   {formErrors.termsAgreed && (
                     <p className="mt-1 text-sm text-red-500">
@@ -622,10 +664,6 @@ const AddItem = ({ user, categories, setCategories }) => {
           </motion.div>
         </form>
       </motion.div>
-      {/* Terms Modal */}
-      {isTermsOpen && (
-        <TermsModal isOpen={isTermsOpen} setIsOpen={setIsTermsOpen} />
-      )}
     </div>
   );
 };

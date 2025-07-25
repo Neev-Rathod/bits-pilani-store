@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "store.bits_student.twa",
+      "sha256_cert_fingerprints": [
+        "BB:97:64:DB:B7:E5:1C:69:2D:6B:1D:AC:B6:8D:F8:2D:8D:8C:CC:37:0D:17:6D:16:5B:FA:56:BE:29:00:7A:66"
+      ]
+    }
+  }
+]

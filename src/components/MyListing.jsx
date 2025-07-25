@@ -15,6 +15,7 @@ import {
 } from "react-icons/fi";
 import axios from "axios";
 import { toast } from "react-toastify";
+import { getCSRFTokenFromCookies } from "../App";
 
 const VITE_API_URL = import.meta.env.VITE_API_URL;
 
@@ -59,21 +60,6 @@ const MyListings = ({ user }) => {
     fetchMyListings();
   }, [fetchMyListings]);
 
-  // Utility functions
-  const getCSRFTokenFromCookies = () => {
-    const name = "csrftoken=";
-    const decodedCookie = decodeURIComponent(document.cookie);
-    const cookies = decodedCookie.split(";");
-
-    for (let i = 0; i < cookies.length; i++) {
-      let c = cookies[i].trim();
-      if (c.indexOf(name) === 0) {
-        return c.substring(name.length, c.length);
-      }
-    }
-    return null;
-  };
-
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleDateString("en-US", {
@@ -104,14 +90,11 @@ const MyListings = ({ user }) => {
   const handleItemOperation = async (method, ids, confirmMessage = null) => {
     if (ids.length === 0) return;
 
-    // Show confirmation dialog if provided
     if (confirmMessage && !window.confirm(confirmMessage)) return;
 
-    // Normalize ids to array
     const idsArray = Array.isArray(ids) ? ids : [ids];
     const isBulkOperation = idsArray.length > 1;
 
-    // Set loading state
     const loadingKey = method
       .toLowerCase()
       .replace(/\s+/g, "")
@@ -122,52 +105,78 @@ const MyListings = ({ user }) => {
       setOperationLoading((prev) => ({ ...prev, [idsArray[0]]: method }));
     }
 
-    try {
-      const token = getCSRFTokenFromCookies();
+    const csrfTokens = getCSRFTokenFromCookies();
+    if (!csrfTokens || csrfTokens.length === 0) {
+      localStorage.clear();
+      toast.error("Session expired. Please log in again.");
+      window.location.reload();
+      return;
+    }
 
-      // Perform the operation
-      await axios.post(
-        `${VITE_API_URL}/mylistings/`,
-        {
-          method: method,
-          ids: idsArray,
-        },
-        {
-          headers: {
-            "X-CSRFToken": token,
-            "Content-Type": "application/json",
+    let success = false;
+    let errorOccurred = false;
+
+    for (const csrfToken of csrfTokens) {
+      try {
+        await axios.post(
+          `${import.meta.env.VITE_API_URL}/mylistings/`,
+          {
+            method: method,
+            ids: idsArray,
           },
-          withCredentials: true,
+          {
+            headers: {
+              "X-CSRFToken": csrfToken,
+              "Content-Type": "application/json",
+            },
+            withCredentials: true,
+          }
+        );
+
+        success = true;
+        break;
+      } catch (err) {
+        if (err.response?.status === 401) {
+          toast.error(
+            "Unauthorized. Please log in with Bits Email to Edit Items that are listed."
+          );
+          errorOccurred = true;
+          break; // Exit loop on unauthorized error
         }
+        console.warn("Operation failed with token:", csrfToken, err.message);
+        continue;
+      }
+    }
+    if (errorOccurred) {
+      return;
+    }
+
+    if (!success) {
+      toast.error(
+        "Operation failed: CSRF tokens invalid. Please try logging in again."
+      );
+    } else {
+      toast.success(
+        `${idsArray.length} item(s) ${
+          {
+            DELETE: "deleted",
+            "MARK SOLD": "marked as sold",
+            "MARK UNSOLD": "marked as unsold",
+            REPOST: "reposted",
+          }[method] || "updated"
+        } successfully`
       );
 
       await fetchMyListings();
-
-      // Show success message
-      const operationNames = {
-        DELETE: "deleted",
-        "MARK SOLD": "marked as sold",
-        "MARK UNSOLD": "marked as unsold",
-        REPOST: "reposted",
-      };
-
-      const actionName = operationNames[method] || "updated";
-      toast.success(`${idsArray.length} item(s) ${actionName} successfully`);
-
-      // Clear selection after bulk operations
       setSelectedItems(new Set());
       setIsSelecting(false);
-    } catch (err) {
-      const errorMessage = err.response?.data?.message || err.message;
-      toast.error(`Error performing operation: ${errorMessage}`);
-      console.error("Operation error:", err);
-    } finally {
-      // Clear loading state
-      if (isBulkOperation) {
-        setBulkLoading((prev) => ({ ...prev, [loadingKey]: false }));
-      } else {
-        setOperationLoading((prev) => ({ ...prev, [idsArray[0]]: false }));
-      }
+    }
+
+    // Clear loading state
+    if (isBulkOperation) {
+      setBulkLoading((prev) => ({ ...prev, [loadingKey]: false }));
+    } else {
+      setOperationLoading((prev) => ({ ...prev, [idsArray[0]]: false }));
     }
   };
 

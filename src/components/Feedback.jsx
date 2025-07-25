@@ -12,6 +12,7 @@ import {
 } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { getCSRFTokenFromCookies } from "../App";
 
 const Feedback = () => {
   const [description, setDescription] = useState("");
@@ -53,82 +54,63 @@ const Feedback = () => {
     setImages((prev) => prev.filter((img) => img.id !== id));
   };
 
-  // Helper to extract CSRF token from cookies
-  const getCSRFTokenFromCookies = () => {
-    const name = "csrftoken=";
-    const decoded = decodeURIComponent(document.cookie);
-    const cookies = decoded.split(";");
-    for (let c of cookies) {
-      c = c.trim();
-      if (c.startsWith(name)) return c.substring(name.length);
-    }
-    return null;
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!description.trim()) return;
     setIsSubmitting(true);
     setError("");
 
-    try {
-      const csrfToken = getCSRFTokenFromCookies();
-
-      if (!csrfToken) {
-        throw new Error("CSRF token not found in cookies.");
-      }
-
-      const formData = new FormData();
-      formData.append("description", description.trim());
-      images.forEach((image) => {
-        formData.append("images", image.file);
-      });
-
-      const response = await axios.post(
-        `${import.meta.env.VITE_API_URL}/feedback`,
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-            "X-CSRFToken": csrfToken, // Include CSRF token in headers
-          },
-          withCredentials: true, // Ensure cookies are sent with the request
-        }
-      );
-
-      // Success check
-      if (response.data.status === "ok") {
-        setIsSubmitting(false);
-        setIsSubmitted(true);
-      } else {
-        throw new Error("Unexpected response format");
-      }
-    } catch (error) {
-      setIsSubmitting(false);
-
-      // Enhanced error logging
-      console.error("Full error object:", error);
-      console.error("Error config:", error.config);
-      console.error("Error request headers:", error.config?.headers);
-
-      if (error.response?.data?.error) {
-        setError(error.response.data.error);
-      } else if (
-        error.response?.status >= 400 &&
-        error.response?.status < 500
-      ) {
-        setError(
-          "Client error occurred. Please check your input and try again."
-        );
-      } else if (error.response?.status >= 500) {
-        setError("Server error occurred. Please try again later.");
-      } else if (error.request) {
-        setError("Network error. Please check your connection and try again.");
-      } else {
-        setError("An unexpected error occurred. Please try again.");
-      }
-      console.error("Submission failed:", error);
+    const csrfTokens = getCSRFTokenFromCookies();
+    if (!csrfTokens || csrfTokens.length === 0) {
+      localStorage.clear();
+      toast.error("Session expired. Please log in again.");
+      window.location.reload();
+      return;
     }
+
+    let success = false;
+
+    for (const csrfToken of csrfTokens) {
+      try {
+        const formData = new FormData();
+        formData.append("description", description.trim());
+        images.forEach((image) => {
+          formData.append("images", image.file);
+        });
+
+        const response = await axios.post(
+          `${import.meta.env.VITE_API_URL}/feedback`,
+          formData,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+              "X-CSRFToken": csrfToken,
+            },
+            withCredentials: true,
+          }
+        );
+
+        if (response.data.status === "ok") {
+          success = true;
+          break;
+        } else {
+          continue;
+        }
+      } catch (error) {
+        console.warn("Feedback failed with token:", csrfToken, error.message);
+
+        continue;
+      }
+    }
+
+    if (!success) {
+      setError("Failed to submit feedback. CSRF tokens rejected.");
+      toast.error("Submission failed. Please try again.");
+    } else {
+      setIsSubmitted(true);
+    }
+
+    setIsSubmitting(false);
   };
 
   const handleReset = () => {

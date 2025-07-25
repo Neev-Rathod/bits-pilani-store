@@ -20,7 +20,7 @@ export default defineConfig({
         name: "Bits Pilani Store",
         short_name: "Bits Store",
         description: "Buy & Sell Hostel Items at BITS Pilani",
-        theme_color: "#3b82f6",
+        theme_color: "#000000",
         background_color: "#ffffff",
         display: "standalone",
         scope: "/",

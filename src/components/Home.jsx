@@ -34,7 +34,6 @@ const categoryIcons = {
 };
 
 const ITEMS_PER_PAGE = 20;
-const CACHE_EXPIRY_MINUTES = 2;
 
 // Skeleton loader component
 const SkeletonLoader = () => {
@@ -85,15 +84,7 @@ const getStorageKey = (params) => {
   }`;
 };
 
-const isDataExpired = (timestamp) => {
-  if (!timestamp) return true;
-  const now = new Date().getTime();
-  const diff = now - timestamp;
-  const minutesDiff = diff / (1000 * 60);
-  return minutesDiff > CACHE_EXPIRY_MINUTES;
-};
-
-const getCachedData = (storageKey, ignoreExpiry = false) => {
+const getCachedData = (storageKey) => {
   try {
     const cached = localStorage.getItem(STORAGE_KEYS.ITEMS_DATA);
     if (!cached) return null;
@@ -101,14 +92,7 @@ const getCachedData = (storageKey, ignoreExpiry = false) => {
     const parsedCache = JSON.parse(cached);
     const data = parsedCache[storageKey];
 
-    if (!data) return null;
-
-    // If ignoreExpiry is true, return data regardless of expiry
-    if (ignoreExpiry || !isDataExpired(data.timestamp)) {
-      return data;
-    }
-
-    return null;
+    return data || null;
   } catch (error) {
     console.error("Error reading cached data:", error);
     return null;
@@ -161,7 +145,6 @@ const getCachedCategories = () => {
     if (!cached) return null;
 
     const data = JSON.parse(cached);
-    // Always return categories, ignore expiry for categories
     return data.categories;
   } catch (error) {
     console.error("Error reading cached categories:", error);
@@ -336,7 +319,7 @@ const Home = ({
           } else {
             console.log("Data unchanged, updating cache timestamp only");
             // Data is same, just update the timestamp in cache
-            const cachedData = getCachedData(storageKey, true);
+            const cachedData = getCachedData(storageKey);
             if (cachedData) {
               setCachedData(storageKey, {
                 ...cachedData,
@@ -380,7 +363,7 @@ const Home = ({
 
       // For initial load (page 1, not load more), always try cache first
       if (!isLoadMore && !forceRefresh && page === 1) {
-        const cachedData = getCachedData(storageKey, true); // Ignore expiry for initial load
+        const cachedData = getCachedData(storageKey);
 
         if (cachedData) {
           console.log("Loading data from cache");
@@ -395,11 +378,9 @@ const Home = ({
             setCategories(cachedCategories);
           }
 
-          // Check if cache is expired and trigger background refresh
-          if (isDataExpired(cachedData.timestamp)) {
-            console.log("Cache expired, triggering background refresh");
-            setTimeout(() => backgroundRefresh(storageKey), 100); // Small delay to let UI render first
-          }
+          // Always trigger background refresh to compare data
+          console.log("Triggering background refresh to check for updates");
+          setTimeout(() => backgroundRefresh(storageKey), 100); // Small delay to let UI render first
 
           return;
         }

@@ -1,11 +1,10 @@
-import React, { lazy, Suspense, useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Route, Routes, Navigate, useNavigate } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import axios from "axios";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "./App.css";
-
 // Components
 import Navbar from "./components/Navbar";
 import Home from "./components/Home";
@@ -22,7 +21,22 @@ export const ProtectedRoute = ({ children, user }) => {
   }
   return children;
 };
+export const getCSRFTokenFromCookies = () => {
+  const name = "csrftoken=";
+  const decodedCookie = decodeURIComponent(document.cookie);
+  const cookies = decodedCookie.split(";");
 
+  const tokens = [];
+
+  for (let i = 0; i < cookies.length; i++) {
+    let c = cookies[i].trim();
+    if (c.indexOf(name) === 0) {
+      tokens.push(c.substring(name.length, c.length));
+    }
+  }
+
+  return tokens;
+};
 function App() {
   const [darktheme, setDarkthemeState] = useState(
     localStorage.getItem("color-theme") || "light"
@@ -77,23 +91,6 @@ function App() {
     setIsLoading(false);
   }, []);
 
-  const getCSRFTokenFromCookies = () => {
-    const name = "csrftoken=";
-    const decodedCookie = decodeURIComponent(document.cookie);
-    const cookies = decodedCookie.split(";");
-
-    const tokens = [];
-
-    for (let i = 0; i < cookies.length; i++) {
-      let c = cookies[i].trim();
-      if (c.indexOf(name) === 0) {
-        tokens.push(c.substring(name.length, c.length));
-      }
-    }
-
-    return tokens;
-  };
-
   const handleLogin = async (userData) => {
     try {
       // Initial GET request to possibly set CSRF cookie
@@ -132,7 +129,7 @@ function App() {
 
         const userDataWithCampus = {
           ...userData,
-          campus: response.data.campus || "default-campus", // Adjust default as needed
+          campus: response.data.campus || "All Campuses", // Adjust default as needed
         };
 
         setUser(userDataWithCampus);

@@ -23,3 +23,16 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+android.keystore
+android
+build
+app
+gradle
+.gradle
+*.abb
+*.apk
+*gradle*
+*.idsig
+*.iml
+app-release-bundle.aab
+*generate*

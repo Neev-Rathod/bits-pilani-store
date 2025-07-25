@@ -53,6 +53,14 @@ function Item() {
         setItem(data.details);
         setSimilarItems(data.similar_items || []);
       } catch (err) {
+        if (err.response?.status === 403) {
+          // Clear localStorage to logout user
+          localStorage.clear();
+          toast.error("Login expired. Please login again.");
+          // Redirect to login or refresh page
+          window.location.reload();
+          return;
+        }
         console.error("Error fetching item data:", err);
         setError(err.message);
       } finally {
