@@ -257,6 +257,10 @@ const Home = ({
         if (selectedCategory && selectedCategory !== "All Categories") {
           params.append("cat", selectedCategory);
         }
+        if (selectedCampus === "All Campuses") {
+          params.append("c", "All");
+        }
+        console.log("Selected Campus:", selectedCampus);
 
         if (selectedCampus && selectedCampus !== "All Campuses") {
           params.append("c", selectedCampus);
@@ -284,8 +288,6 @@ const Home = ({
           // Check if items have changed
           const currentItems = items;
           if (!areItemsEqual(currentItems, newItems)) {
-            console.log("Data has changed, updating...");
-
             // Update items
             setItems(newItems);
             setTotalItemsCat(totalItemsCatData);
@@ -317,7 +319,6 @@ const Home = ({
             // Update categories cache
             setCachedCategories(newCategories);
           } else {
-            console.log("Data unchanged, updating cache timestamp only");
             // Data is same, just update the timestamp in cache
             const cachedData = getCachedData(storageKey);
             if (cachedData) {
@@ -366,7 +367,6 @@ const Home = ({
         const cachedData = getCachedData(storageKey);
 
         if (cachedData) {
-          console.log("Loading data from cache");
           setItems(cachedData.items || []);
           setTotalItemsCat(cachedData.totalItemsCat || {});
           setCurrentPage(cachedData.lastPage || 1);
@@ -379,7 +379,6 @@ const Home = ({
           }
 
           // Always trigger background refresh to compare data
-          console.log("Triggering background refresh to check for updates");
           setTimeout(() => backgroundRefresh(storageKey), 100); // Small delay to let UI render first
 
           return;
@@ -409,6 +408,10 @@ const Home = ({
         if (selectedCampus && selectedCampus !== "All Campuses") {
           params.append("c", selectedCampus);
         }
+        if (selectedCampus === "All Campuses") {
+          params.append("c", "All");
+        }
+        console.log("Selected Campus:", selectedCampus);
 
         params.append("p", page.toString());
         params.append("s", getSortValue(sortType).toString());

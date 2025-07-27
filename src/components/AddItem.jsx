@@ -9,7 +9,6 @@ import axios from "axios";
 import { TbCurrencyDirham } from "react-icons/tb";
 import compressImages from "./compressImages";
 import { getCSRFTokenFromCookies } from "../App"; // Adjust the import path as needed
-import { b } from "motion/react-client";
 const VITE_API_URL = import.meta.env.VITE_API_URL;
 
 const initialFormState = {
@@ -31,6 +30,8 @@ const AddItem = ({ user, categories, setCategories }) => {
   const [formErrors, setFormErrors] = useState({});
   const [formData, setFormData] = useState(initialFormState);
   const [hostels, setHostels] = useState();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [imageProcessing, setImageProcessing] = useState(false);
 
   // Simplified function to set form data from API response
   const setItemData = (itemDetails) => {
@@ -182,6 +183,7 @@ const AddItem = ({ user, categories, setCategories }) => {
 
     try {
       // Compress the images
+      setImageProcessing(true);
       const compressedFiles = await compressImages(files, 300, 0.7); // 300KB max size, 70% quality
 
       const newPreviewImages = [];
@@ -207,6 +209,8 @@ const AddItem = ({ user, categories, setCategories }) => {
     } catch (error) {
       console.error("Error compressing images:", error);
       toast.error("Error compressing images. Please try again.");
+    } finally {
+      setImageProcessing(false);
     }
   };
 
@@ -259,6 +263,11 @@ const AddItem = ({ user, categories, setCategories }) => {
       return;
     }
 
+    // Prevent multiple submissions
+    if (isSubmitting) {
+      return;
+    }
+
     const errors = validateForm();
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
@@ -273,68 +282,101 @@ const AddItem = ({ user, categories, setCategories }) => {
       return;
     }
 
+    // Set loading state
+    setIsSubmitting(true);
+
     const formDataToSend = new FormData();
+
+    // Append regular fields
     formDataToSend.append("itemName", formData.productName);
     formDataToSend.append("description", formData.description);
     formDataToSend.append("itemPrice", Number(formData.price));
     formDataToSend.append("category", categoryId);
     formDataToSend.append("sellerHostel", formData.hostel);
     formDataToSend.append("contactNumber", formData.phoneNumber);
-    formData.images.forEach((img) => {
+
+    // Separate and sort existing and new images with their original indices
+    const existingImages = [];
+    const newImages = [];
+
+    formData.images.forEach((img, index) => {
       if (img instanceof File) {
-        formDataToSend.append("images", img);
+        newImages.push({ index, image: img });
       } else if (typeof img === "string") {
-        formDataToSend.append("existingImages", img);
+        existingImages.push({ index, image: img });
       }
     });
 
+    // Append existingImages as structured array
+    existingImages.forEach((item, i) => {
+      formDataToSend.append(`existingImages[${i}][index]`, item.index);
+      formDataToSend.append(`existingImages[${i}][image]`, item.image);
+    });
+
+    // Append new images (files) as structured array
+    newImages.forEach((item, i) => {
+      formDataToSend.append(`images[${i}][index]`, item.index);
+      formDataToSend.append(`images[${i}][image]`, item.image); // This will be a File
+    });
     const csrfTokens = getCSRFTokenFromCookies();
     if (!csrfTokens || csrfTokens.length === 0) {
       toast.error("No CSRF token found. Please log in again.");
       localStorage.clear();
       window.location.reload();
+      setIsSubmitting(false);
       return;
     }
 
     let success = false;
     let errorOccurred = false;
-    for (const csrfToken of csrfTokens) {
-      try {
-        const endpoint = id
-          ? `${import.meta.env.VITE_API_URL}/items/${id}`
-          : `${import.meta.env.VITE_API_URL}/items/`;
 
-        const response = await axios.post(endpoint, formDataToSend, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-            "X-CSRFToken": csrfToken,
-          },
-          withCredentials: true,
-        });
+    try {
+      for (const csrfToken of csrfTokens) {
+        try {
+          const endpoint = id
+            ? `${import.meta.env.VITE_API_URL}/items/${id}`
+            : `${import.meta.env.VITE_API_URL}/items/`;
 
-        toast.success(
-          id ? "Item updated successfully!" : "Product listed successfully!"
-        );
-        success = true;
-        break; // Exit on success
-      } catch (err) {
-        if (err.response?.status === 401) {
-          toast.error(
-            "Unauthorized. Please log in with Bits Email to sell Item."
+          const response = await axios.post(endpoint, formDataToSend, {
+            headers: {
+              "Content-Type": "multipart/form-data",
+              "X-CSRFToken": csrfToken,
+            },
+            withCredentials: true,
+          });
+
+          toast.success(
+            id ? "Item updated successfully!" : "Product listed successfully!"
           );
-          errorOccurred = true;
-          break; // Exit loop on unauthorized error
+          success = true;
+          break; // Exit on success
+        } catch (err) {
+          if (err.response?.status === 401) {
+            toast.error(
+              "Unauthorized. Please log in with Bits Email to sell Item."
+            );
+            errorOccurred = true;
+            break; // Exit loop on unauthorized error
+          }
+          continue; // Try next token
         }
-        continue; // Try next token
       }
-    }
-    if (errorOccurred) {
-      return;
-    }
-    if (!success) {
-      toast.error("All CSRF tokens failed. Please try again.");
-    } else {
-      navigate("/mylistings");
+
+      if (errorOccurred) {
+        return;
+      }
+
+      if (!success) {
+        toast.error("All CSRF tokens failed. Please try again.");
+      } else {
+        navigate("/mylistings");
+      }
+    } catch (error) {
+      console.error("Submission error:", error);
+      toast.error("An error occurred. Please try again.");
+    } finally {
+      // Always reset loading state
+      setIsSubmitting(false);
     }
   };
 
@@ -562,6 +604,8 @@ const AddItem = ({ user, categories, setCategories }) => {
             <motion.div variants={fadeIn} className="form-group">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Product Images (Max 5)
+                <br />
+                {imageProcessing ? "Processing new image..." : ""}
               </label>
               <div
                 className={`border-2 border-dashed p-4 rounded-lg text-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
@@ -653,12 +697,26 @@ const AddItem = ({ user, categories, setCategories }) => {
             {/* Submit Button */}
             <motion.div variants={fadeIn} className="form-group">
               <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+                whileHover={{ scale: isSubmitting ? 1 : 1.02 }}
+                whileTap={{ scale: isSubmitting ? 1 : 0.98 }}
                 type="submit"
-                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                disabled={isSubmitting}
+                className={`w-full flex justify-center items-center gap-2 py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white transition-colors ${
+                  isSubmitting
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                }`}
               >
-                {id ? "Update Product" : "List Product"}
+                {isSubmitting && (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                )}
+                {isSubmitting
+                  ? id
+                    ? "Updating..."
+                    : "Listing..."
+                  : id
+                  ? "Update Product"
+                  : "List Product"}
               </motion.button>
             </motion.div>
           </motion.div>

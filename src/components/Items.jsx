@@ -11,6 +11,7 @@ import {
   FiCalendar,
   FiImage,
   FiX,
+  FiMaximize,
 } from "react-icons/fi";
 import { FaWhatsapp } from "react-icons/fa";
 // Swiper core & required modules
@@ -491,13 +492,23 @@ function Item() {
           >
             {displayImages.map((url, idx) => (
               <SwiperSlide key={idx}>
-                <div className="swiper-zoom-container flex items-center justify-center">
+                <div className="swiper-zoom-container flex items-center justify-center relative group">
+                  {/* Main Image */}
                   <img
                     src={url}
                     alt={`Image ${idx + 1}`}
                     className="object-contain max-h-[90vh] cursor-pointer"
                     onClick={() => setFullScreenOpen(true)}
                   />
+
+                  {/* Expand Icon - shown on hover */}
+                  <div
+                    className="absolute top-2 left-2 bg-black/50 text-white p-2 rounded-full 
+                     transition-opacity duration-200 cursor-pointer z-10"
+                    onClick={() => setFullScreenOpen(true)}
+                  >
+                    <FiMaximize size={20} />
+                  </div>
                 </div>
               </SwiperSlide>
             ))}
@@ -564,7 +575,7 @@ function Item() {
               variants={itemVariants}
             >
               {/* Header Info */}
-              <div className="mb-6">
+              <div className="mb-4">
                 <motion.h1
                   className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-3"
                   variants={itemVariants}
@@ -574,7 +585,7 @@ function Item() {
 
                 {item.category && (
                   <motion.div
-                    className="flex items-center gap-2 mb-4"
+                    className="flex items-center gap-2 mb-2"
                     variants={itemVariants}
                   >
                     <span className="inline-block bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 text-sm px-3 py-1 rounded-full">
@@ -584,7 +595,7 @@ function Item() {
                 )}
 
                 <motion.div
-                  className="text-3xl sm:text-4xl font-bold text-green-600 dark:text-green-400 mb-6"
+                  className="text-3xl sm:text-4xl font-bold text-green-600 dark:text-green-400"
                   variants={itemVariants}
                 >
                   {formatPrice(item.price, item.campus)}
@@ -597,8 +608,20 @@ function Item() {
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
                     Description
                   </h3>
+
                   <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                    <p className="text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
+                    <p
+                      className="
+                          text-gray-700 dark:text-gray-300 
+                            leading-relaxed 
+                            whitespace-pre-wrap
+                            lg:leading-relaxed 
+                            lg:max-h-[15rem] 
+                            lg:overflow-y-auto
+                          
+                            scroll-py-2
+                            "
+                    >
                       {item.description}
                     </p>
                   </div>
