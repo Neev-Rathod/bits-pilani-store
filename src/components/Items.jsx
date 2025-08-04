@@ -36,7 +36,7 @@ export const formatPrice = (price, campus) => {
 
   return new Intl.NumberFormat("en-IN", options).format(price);
 };
-function Item({ itemId, isModal = false, onClose }) {
+function Item({ itemId, isModal = false, onClose, onItemClick }) {
   const { id: paramId } = useParams();
   const navigate = useNavigate();
 
@@ -430,14 +430,11 @@ function Item({ itemId, isModal = false, onClose }) {
       variants={cardVariants}
       whileHover="hover"
       onClick={() => {
-        if (isModal && onClose) {
-          // If we're in modal mode, close this modal and navigate to the new item
-          onClose();
-          // Small delay to ensure modal closes before navigation
-          setTimeout(() => {
-            navigate(`/item/${similarItem.id}`);
-          }, 100);
+        if (isModal && onItemClick) {
+          // Use the navigation stack handler when in modal mode
+          onItemClick(similarItem.id, id);
         } else {
+          // Regular navigation when not in modal mode
           navigate(`/item/${similarItem.id}`);
         }
       }}

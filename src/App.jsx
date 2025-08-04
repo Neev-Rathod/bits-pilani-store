@@ -23,7 +23,7 @@ import MyListings from "./components/MyListing";
 import Login from "./components/Login";
 
 // Modal component for Item view
-const ItemModal = ({ itemId, onClose }) => {
+const ItemModal = ({ itemId, onClose, onItemClick }) => {
   useEffect(() => {
     // Prevent body scroll when modal is open
     document.body.style.overflow = "hidden";
@@ -44,26 +44,12 @@ const ItemModal = ({ itemId, onClose }) => {
       onClick={handleBackdropClick}
     >
       <div className="relative w-full h-full bg-gray-50 dark:bg-gray-900 overflow-hidden">
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 z-60 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white p-2 rounded-full shadow-lg transition-colors"
-          aria-label="Close modal"
-        >
-          <svg
-            className="w-6 h-6"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M6 18L18 6M6 6l12 12"
-            />
-          </svg>
-        </button>
-        <Item itemId={itemId} isModal={true} onClose={onClose} />
+        <Item
+          itemId={itemId}
+          isModal={true}
+          onClose={onClose}
+          onItemClick={onItemClick}
+        />
       </div>
     </div>
   );
@@ -112,6 +98,9 @@ function App() {
   // Modal state for item view
   const [showItemModal, setShowItemModal] = useState(false);
   const [selectedItemId, setSelectedItemId] = useState(null);
+
+  // Navigation stack for tracking item navigation history
+  const [itemNavigationStack, setItemNavigationStack] = useState([]);
 
   console.log(scrollHeight);
   // Initialize theme
@@ -186,6 +175,8 @@ function App() {
       // Only close modal if we're not on an item path and modal is open
       setShowItemModal(false);
       setSelectedItemId(null);
+      // Clear navigation stack when going back to home
+      setItemNavigationStack([]);
     }
   }, [location.pathname, user, showItemModal]);
 
@@ -197,6 +188,8 @@ function App() {
         // User navigated back from item page
         setShowItemModal(false);
         setSelectedItemId(null);
+        // Clear navigation stack when going back to home
+        setItemNavigationStack([]);
       }
     };
 
@@ -206,11 +199,22 @@ function App() {
 
   // Handle modal close
   const handleCloseItemModal = useCallback(() => {
-    setShowItemModal(false);
-    setSelectedItemId(null);
-    // Navigate back to home
-    navigate("/");
-  }, [navigate]);
+    // Check if there's a previous item in the navigation stack
+    if (itemNavigationStack.length > 0) {
+      // Get the previous item from the stack
+      const previousItemId =
+        itemNavigationStack[itemNavigationStack.length - 1];
+      // Remove the current item from the stack
+      setItemNavigationStack((prev) => prev.slice(0, -1));
+      // Navigate to the previous item
+      navigate(`/item/${previousItemId}`);
+    } else {
+      // No previous item, go back to home
+      setShowItemModal(false);
+      setSelectedItemId(null);
+      navigate("/");
+    }
+  }, [navigate, itemNavigationStack]);
 
   // Handle item click from Home component
   const handleItemClick = useCallback(
@@ -219,6 +223,18 @@ function App() {
       setShowItemModal(true);
       // Navigate to the item URL properly for browser history
       navigate(`/item/${itemId}`);
+    },
+    [navigate]
+  );
+
+  // Handle item click from within item page (similar items)
+  const handleItemClickFromItem = useCallback(
+    (newItemId, currentItemId) => {
+      // Add current item to navigation stack
+      setItemNavigationStack((prev) => [...prev, currentItemId]);
+      setSelectedItemId(newItemId);
+      // Navigate to the new item
+      navigate(`/item/${newItemId}`);
     },
     [navigate]
   );
@@ -437,6 +453,7 @@ function App() {
                   <ItemModal
                     itemId={selectedItemId}
                     onClose={handleCloseItemModal}
+                    onItemClick={handleItemClickFromItem}
                   />
                 )}
 
