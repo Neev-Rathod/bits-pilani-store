@@ -1,5 +1,11 @@
 import { useEffect, useState, useCallback } from "react";
-import { Route, Routes, Navigate, useNavigate } from "react-router-dom";
+import {
+  Route,
+  Routes,
+  Navigate,
+  useNavigate,
+  useLocation,
+} from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -38,6 +44,8 @@ export const getCSRFTokenFromCookies = () => {
   return tokens;
 };
 function App() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [darktheme, setDarkthemeState] = useState(
     localStorage.getItem("color-theme") || "light"
   );
@@ -49,9 +57,11 @@ function App() {
   const [selectedCampus, setSelectedCampus] = useState(
     JSON.parse(localStorage.getItem("user"))?.campus || "All Campuses"
   );
+  const [loginLoading, setLoginLoading] = useState(false);
   const [categories, setCategories] = useState([]);
-  const navigate = useNavigate();
-
+  const [scrollHeight, setScrollHeight] = useState(0); // Always start from 0
+  const [hasNavigatedToHome, setHasNavigatedToHome] = useState(false);
+  console.log(scrollHeight);
   // Initialize theme
   const setAppHeight = () => {
     const height = window.innerHeight;
@@ -77,6 +87,27 @@ function App() {
     document.body.classList.add(darktheme);
   }, [darktheme]);
 
+  // Persist scroll height to localStorage
+  useEffect(() => {
+    localStorage.setItem("homeScrollHeight", scrollHeight.toString());
+  }, [scrollHeight]);
+
+  // Handle scroll restoration when navigating back to home
+  useEffect(() => {
+    if (location.pathname === "/" && hasNavigatedToHome && user) {
+      // Only restore scroll if we've navigated to home from another page
+      const savedScrollHeight = localStorage.getItem("homeScrollHeight");
+      if (savedScrollHeight) {
+        const parsedScrollHeight = parseInt(savedScrollHeight, 10);
+        // Limit scroll height to maximum 1299
+        setScrollHeight(parsedScrollHeight);
+      }
+    } else if (location.pathname !== "/") {
+      // Mark that we're navigating away from home
+      setHasNavigatedToHome(true);
+    }
+  }, [location.pathname, hasNavigatedToHome, user]);
+
   // Load user from localStorage on mount
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
@@ -92,6 +123,7 @@ function App() {
   }, []);
 
   const handleLogin = async (userData) => {
+    setLoginLoading(true);
     try {
       // Initial GET request to possibly set CSRF cookie
       await axios.get(`${import.meta.env.VITE_API_URL}/authreceiver`, {
@@ -148,22 +180,20 @@ function App() {
       return;
     }
 
-    // Optional final GET request
-    try {
-      await axios.get(`${import.meta.env.VITE_API_URL}/authreceiver`, {
-        withCredentials: true,
-      });
-    } catch (error) {
-      console.error("Final auth check failed:", error);
-      toast.error("Authentication check failed after login.");
-    }
-
+    setLoginLoading(false);
+    toast.success(`Welcome ${userData.name}! 🎉`);
+    setSelectedCampus(
+      JSON.parse(localStorage.getItem("user"))?.campus || "All Campuses"
+    );
     navigate("/");
   };
 
   const handleLogout = () => {
     setUser(null);
     localStorage.removeItem("user");
+    localStorage.removeItem("homeScrollHeight"); // Clear scroll position on logout
+    setScrollHeight(0); // Reset scroll height state
+    setHasNavigatedToHome(false); // Reset navigation flag
     navigate("/login"); // Redirect to login after logout
   };
 
@@ -174,6 +204,18 @@ function App() {
 
   const setSelectedCategory = useCallback((cat) => {
     setSelectedCategoryState(cat);
+  }, []);
+
+  // Function to reset scroll height (can be called when needed)
+  const resetScrollHeight = useCallback(() => {
+    setScrollHeight(0);
+    setHasNavigatedToHome(false);
+    localStorage.removeItem("homeScrollHeight");
+  }, []);
+
+  // Memoized scroll height setter to prevent unnecessary re-renders
+  const updateScrollHeight = useCallback((height) => {
+    setScrollHeight(height);
   }, []);
 
   // Show loading spinner while checking authentication
@@ -195,7 +237,11 @@ function App() {
         <Route
           path="/login"
           element={
-            user ? <Navigate to="/" replace /> : <Login onLogin={handleLogin} />
+            user ? (
+              <Navigate to="/" replace />
+            ) : (
+              <Login onLogin={handleLogin} loading={loginLoading} />
+            )
           }
         />
 
@@ -230,6 +276,8 @@ function App() {
                         selectedCampus={selectedCampus}
                         categories={categories}
                         setCategories={setCategories}
+                        scrollHeight={scrollHeight} // Pass scrollHeight
+                        setScrollHeight={updateScrollHeight} // Pass memoized setScrollHeight
                       />
                     }
                   />

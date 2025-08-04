@@ -71,10 +71,55 @@ const AddItem = ({ user, categories, setCategories }) => {
 
     const getCategories = async () => {
       try {
-        const res = await axios.get(`${VITE_API_URL}/categories`, {
-          withCredentials: true,
-        });
-        setCategories(res.data.data);
+        // const res = await axios.get(`${VITE_API_URL}/categories`, {
+        //   withCredentials: true,
+        // });
+        const res = {
+          status: "ok",
+          data: [
+            {
+              id: 21,
+              name: "Electronics & Gadgets",
+            },
+            {
+              id: 22,
+              name: "Kitchen & Cooking",
+            },
+            {
+              id: 23,
+              name: "Books & Study Materials",
+            },
+            {
+              id: 24,
+              name: "Sports & Fitness Gear",
+            },
+            {
+              id: 25,
+              name: "Musical Instruments",
+            },
+            {
+              id: 26,
+              name: "Dorm & Bedroom Essentials",
+            },
+            {
+              id: 27,
+              name: "Room Decor",
+            },
+            {
+              id: 28,
+              name: "Community & Shared Resources",
+            },
+            {
+              id: 29,
+              name: "Digital Subscriptions & Accounts",
+            },
+            {
+              id: 30,
+              name: "Others",
+            },
+          ],
+        };
+        setCategories(res.data);
       } catch (err) {
         console.error("Error fetching categories:", err);
         if (err.response?.status === 403) {

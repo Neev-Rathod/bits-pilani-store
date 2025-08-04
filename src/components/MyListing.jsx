@@ -160,8 +160,8 @@ const MyListings = ({ user }) => {
         `${idsArray.length} item(s) ${
           {
             DELETE: "deleted",
-            "MARK SOLD": "marked as sold",
-            "MARK UNSOLD": "marked as unsold",
+            "MARK SOLD": "marked as Inactive",
+            "MARK UNSOLD": "marked as Active",
             REPOST: "reposted",
           }[method] || "updated"
         } successfully`
@@ -490,26 +490,26 @@ const MyListings = ({ user }) => {
 
                 <button
                   onClick={handleBulkMarkSold}
-                  disabled={bulkLoading.marksold}
+                  disabled={bulkLoading.markSold}
                   className={`flex items-center gap-1 bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg transition-colors duration-200 text-sm font-medium ${
-                    bulkLoading.marksold ? "opacity-60 cursor-not-allowed" : ""
+                    bulkLoading.markSold ? "opacity-60 cursor-not-allowed" : ""
                   }`}
                 >
                   <FiCheckCircle className="text-xs" />
-                  {bulkLoading.marksold ? "Marking..." : "Mark Sold"}
+                  {bulkLoading.markSold ? "Marking..." : "Mark Inactive"}
                 </button>
 
                 <button
                   onClick={handleBulkMarkUnsold}
-                  disabled={bulkLoading.markunsold}
+                  disabled={bulkLoading.markUnsold}
                   className={`flex items-center gap-1 bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1.5 rounded-lg transition-colors duration-200 text-sm font-medium ${
-                    bulkLoading.markunsold
+                    bulkLoading.markUnsold
                       ? "opacity-60 cursor-not-allowed"
                       : ""
                   }`}
                 >
                   <FiXCircle className="text-xs" />
-                  {bulkLoading.markunsold ? "Marking..." : "Mark Unsold"}
+                  {bulkLoading.markUnsold ? "Marking..." : "Mark Active"}
                 </button>
 
                 <button
@@ -565,7 +565,7 @@ const MyListings = ({ user }) => {
                   {item.issold ? (
                     <div className="absolute inset-0 flex items-center justify-center">
                       <div className="bg-red-500 text-white px-4 py-2 rounded-full text-sm font-bold transform -rotate-12 shadow-md">
-                        SOLD
+                        Inactive
                       </div>
                     </div>
                   ) : (
@@ -643,7 +643,7 @@ const MyListings = ({ user }) => {
                         <FiXCircle />
                         {isOperationLoading(item.id, "MARK UNSOLD")
                           ? "Marking..."
-                          : "Mark as Unsold"}
+                          : "Mark as Active"}
                       </button>
                     ) : (
                       <button
@@ -659,7 +659,7 @@ const MyListings = ({ user }) => {
                         <FiCheckCircle />
                         {isOperationLoading(item.id, "MARK SOLD")
                           ? "Marking..."
-                          : "Mark as Sold"}
+                          : "Mark as Inactive"}
                       </button>
                     )}
                   </div>

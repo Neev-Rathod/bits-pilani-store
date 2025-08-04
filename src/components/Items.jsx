@@ -12,6 +12,7 @@ import {
   FiImage,
   FiX,
   FiMaximize,
+  FiShare2,
 } from "react-icons/fi";
 import { FaWhatsapp } from "react-icons/fa";
 // Swiper core & required modules
@@ -23,7 +24,18 @@ import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
 import "swiper/css/zoom";
+export const formatPrice = (price, campus) => {
+  let options = {
+    style: "currency",
+    currency: "INR",
+  };
 
+  if (campus === "DUB") {
+    options.currency = "AED";
+  }
+
+  return new Intl.NumberFormat("en-IN", options).format(price);
+};
 function Item() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -399,19 +411,6 @@ function Item() {
     });
   };
 
-  const formatPrice = (price, campus) => {
-    let options = {
-      style: "currency",
-      currency: "INR",
-    };
-
-    if (campus === "DUB") {
-      options.currency = "AED";
-    }
-
-    return new Intl.NumberFormat("en-IN", options).format(price);
-  };
-
   const handleWhatsApp = () => {
     const message = encodeURIComponent(
       `Hi! I'm interested in your ${item.name} listed on BITS Pilani Store.`
@@ -539,17 +538,46 @@ function Item() {
     >
       <div className="container mx-auto px-4 py-6 max-w-6xl">
         {/* Back Button */}
-        <motion.button
-          onClick={() => navigate(-1)}
-          className="mb-6 flex items-center text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors duration-200"
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.4 }}
-          whileHover={{ x: -5 }}
-        >
-          <FiArrowLeft className="w-5 h-5 mr-2" />
-          Back
-        </motion.button>
+        <div className="flex items-center justify-between w-full">
+          <motion.button
+            onClick={() => navigate(-1)}
+            className="mb-6 flex items-center text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors duration-200"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.4 }}
+            whileHover={{ x: -5 }}
+          >
+            <FiArrowLeft className="w-5 h-5 mr-2" />
+            Back
+          </motion.button>
+          <motion.button
+            onClick={async () => {
+              try {
+                if (navigator.share) {
+                  await navigator.share({
+                    title: document.title,
+                    url: window.location.href,
+                  });
+                } else {
+                  // Fallback: Copy link to clipboard
+                  await navigator.clipboard.writeText(window.location.href);
+                  alert("Link copied to clipboard!");
+                }
+              } catch (err) {
+                console.error("Error sharing:", err);
+              }
+            }}
+            className="mb-6 ml-4 flex items-center text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white transition-colors duration-200"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.4, delay: 0.1 }}
+            whileHover={{ scale: 1.05 }}
+            aria-label="Share this page"
+          >
+            <FiShare2 className="w-5 h-5 mr-2" />
+            Share
+          </motion.button>
+        </div>
 
         {/* Main Content */}
         <motion.div
