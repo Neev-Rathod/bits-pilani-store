@@ -146,6 +146,7 @@ const Home = ({
   setCategories,
   scrollHeight = 0, // <-- from parent
   setScrollHeight,
+  onItemClick, // <-- new prop for handling item clicks
 }) => {
   const [items, setItems] = useState([]);
   const [totalItemsCat, setTotalItemsCat] = useState({});
@@ -778,7 +779,9 @@ const Home = ({
                     ? "opacity-60 cursor-not-allowed"
                     : "cursor-pointer"
                 }`}
-                onClick={() => !item.is_sold && navigate(`/item/${item.id}`)}
+                onClick={() =>
+                  !item.is_sold && onItemClick && onItemClick(item.id)
+                }
               >
                 <div className="relative aspect-[3/4] overflow-hidden bg-gray-100 dark:bg-gray-700">
                   <img

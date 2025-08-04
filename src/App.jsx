@@ -21,6 +21,53 @@ import Feedback from "./components/Feedback";
 import AboutPage from "./components/AboutUs";
 import MyListings from "./components/MyListing";
 import Login from "./components/Login";
+
+// Modal component for Item view
+const ItemModal = ({ itemId, onClose }) => {
+  useEffect(() => {
+    // Prevent body scroll when modal is open
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "unset";
+    };
+  }, []);
+
+  const handleBackdropClick = (e) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center"
+      onClick={handleBackdropClick}
+    >
+      <div className="relative w-full h-full bg-gray-50 dark:bg-gray-900 overflow-hidden">
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 z-60 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white p-2 rounded-full shadow-lg transition-colors"
+          aria-label="Close modal"
+        >
+          <svg
+            className="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+        </button>
+        <Item itemId={itemId} isModal={true} onClose={onClose} />
+      </div>
+    </div>
+  );
+};
 export const ProtectedRoute = ({ children, user }) => {
   if (!user) {
     return <Navigate to="/login" replace />;
@@ -61,6 +108,11 @@ function App() {
   const [categories, setCategories] = useState([]);
   const [scrollHeight, setScrollHeight] = useState(0); // Always start from 0
   const [hasNavigatedToHome, setHasNavigatedToHome] = useState(false);
+
+  // Modal state for item view
+  const [showItemModal, setShowItemModal] = useState(false);
+  const [selectedItemId, setSelectedItemId] = useState(null);
+
   console.log(scrollHeight);
   // Initialize theme
   const setAppHeight = () => {
@@ -121,6 +173,55 @@ function App() {
     }
     setIsLoading(false);
   }, []);
+
+  // Handle item modal based on URL
+  useEffect(() => {
+    const pathMatch = location.pathname.match(/^\/item\/(.+)$/);
+    if (pathMatch && user) {
+      const itemId = pathMatch[1];
+      setSelectedItemId(itemId);
+      setShowItemModal(true);
+      // Don't replace URL immediately - let it stay for proper back button handling
+    } else if (!pathMatch && showItemModal) {
+      // Only close modal if we're not on an item path and modal is open
+      setShowItemModal(false);
+      setSelectedItemId(null);
+    }
+  }, [location.pathname, user, showItemModal]);
+
+  // Handle browser back/forward navigation
+  useEffect(() => {
+    const handlePopState = (event) => {
+      const pathMatch = location.pathname.match(/^\/item\/(.+)$/);
+      if (!pathMatch && showItemModal) {
+        // User navigated back from item page
+        setShowItemModal(false);
+        setSelectedItemId(null);
+      }
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [location.pathname, showItemModal]);
+
+  // Handle modal close
+  const handleCloseItemModal = useCallback(() => {
+    setShowItemModal(false);
+    setSelectedItemId(null);
+    // Navigate back to home
+    navigate("/");
+  }, [navigate]);
+
+  // Handle item click from Home component
+  const handleItemClick = useCallback(
+    (itemId) => {
+      setSelectedItemId(itemId);
+      setShowItemModal(true);
+      // Navigate to the item URL properly for browser history
+      navigate(`/item/${itemId}`);
+    },
+    [navigate]
+  );
 
   const handleLogin = async (userData) => {
     setLoginLoading(true);
@@ -278,6 +379,25 @@ function App() {
                         setCategories={setCategories}
                         scrollHeight={scrollHeight} // Pass scrollHeight
                         setScrollHeight={updateScrollHeight} // Pass memoized setScrollHeight
+                        onItemClick={handleItemClick} // Pass item click handler
+                      />
+                    }
+                  />
+
+                  {/* Item route that also shows Home with modal */}
+                  <Route
+                    path="/item/:id"
+                    element={
+                      <Home
+                        searchVal={searchVal}
+                        selectedCategory={selectedCategory}
+                        setSelectedCategory={setSelectedCategory}
+                        selectedCampus={selectedCampus}
+                        categories={categories}
+                        setCategories={setCategories}
+                        scrollHeight={scrollHeight} // Pass scrollHeight
+                        setScrollHeight={updateScrollHeight} // Pass memoized setScrollHeight
+                        onItemClick={handleItemClick} // Pass item click handler
                       />
                     }
                   />
@@ -308,10 +428,17 @@ function App() {
                     path="/mylistings"
                     element={<MyListings user={user} />}
                   />
-                  <Route path="/item/:id" element={<Item />} />
                   {/* Catch all route for protected area */}
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
+
+                {/* Item Modal */}
+                {showItemModal && selectedItemId && (
+                  <ItemModal
+                    itemId={selectedItemId}
+                    onClose={handleCloseItemModal}
+                  />
+                )}
 
                 <div className="lg:hidden block">
                   <Footer />

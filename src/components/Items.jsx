@@ -36,9 +36,12 @@ export const formatPrice = (price, campus) => {
 
   return new Intl.NumberFormat("en-IN", options).format(price);
 };
-function Item() {
-  const { id } = useParams();
+function Item({ itemId, isModal = false, onClose }) {
+  const { id: paramId } = useParams();
   const navigate = useNavigate();
+
+  // Use itemId prop if provided (for modal), otherwise use URL parameter
+  const id = itemId || paramId;
 
   // State for item data
   const [item, setItem] = useState(null);
@@ -208,7 +211,7 @@ function Item() {
   const SkeletonLoader = () => (
     <div
       className="bg-gray-50 dark:bg-gray-900 overflow-auto"
-      style={{ height: "calc(var(--app-height) - 56px)" }}
+      style={{ height: isModal ? "100vh" : "calc(var(--app-height) - 56px)" }}
     >
       <div className="container mx-auto px-4 py-6 max-w-6xl">
         {/* Back Button Skeleton */}
@@ -426,7 +429,18 @@ function Item() {
       className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden cursor-pointer"
       variants={cardVariants}
       whileHover="hover"
-      onClick={() => navigate(`/item/${similarItem.id}`)}
+      onClick={() => {
+        if (isModal && onClose) {
+          // If we're in modal mode, close this modal and navigate to the new item
+          onClose();
+          // Small delay to ensure modal closes before navigation
+          setTimeout(() => {
+            navigate(`/item/${similarItem.id}`);
+          }, 100);
+        } else {
+          navigate(`/item/${similarItem.id}`);
+        }
+      }}
     >
       <div className="aspect-square bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
         {similarItem.firstimage ? (
@@ -534,13 +548,13 @@ function Item() {
   return (
     <div
       className="bg-gray-50 dark:bg-gray-900 overflow-auto"
-      style={{ height: "calc(var(--app-height) - 56px)" }}
+      style={{ height: isModal ? "100vh" : "calc(var(--app-height) - 56px)" }}
     >
       <div className="container mx-auto px-4 py-6 max-w-6xl">
         {/* Back Button */}
         <div className="flex items-center justify-between w-full">
           <motion.button
-            onClick={() => navigate(-1)}
+            onClick={() => (isModal ? onClose() : navigate(-1))}
             className="mb-6 flex items-center text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 transition-colors duration-200"
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
@@ -548,7 +562,7 @@ function Item() {
             whileHover={{ x: -5 }}
           >
             <FiArrowLeft className="w-5 h-5 mr-2" />
-            Back
+            {isModal ? "Close" : "Back"}
           </motion.button>
           <motion.button
             onClick={async () => {
